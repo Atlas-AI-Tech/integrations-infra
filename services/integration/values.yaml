@@ -1,0 +1,96 @@
+projectName: atlas
+default:
+  annotations:
+    all:
+      app: integration
+  labels:
+    all:
+      "app.kubernetes.io/part-of": integration
+  image:
+    repository: "183295448290.dkr.ecr.ap-south-1.amazonaws.com/atlas/integration"
+    tag: 0.0.0
+  resources:
+    requests:
+      cpu: 0.25
+      memory: 256Mi
+    limits:
+      memory: 2048Mi
+  externalSecrets:
+    injection:
+      secrets:
+        - secretName: env
+          dataFrom:
+            secretKey: app/integration
+          refreshInterval: 30s
+          secretStoreName: aws-secret-manager
+
+deployments:
+  - fullnameOverride: api-server
+    serviceAccount:
+      create: true
+      annotations:
+        eks.amazonaws.com/role-arn: "arn:aws:iam::183295448290:role/atlas-api-server-role"
+    service:
+      type: ClusterIP
+      ports:
+        - port: 3000
+          name: api
+          ingress:
+            enabled: true
+            host: "integration.dev.kreditmind.ai"
+    containers:
+      - fullnameOverride: api-server
+        port: 8000
+        imagePullPolicy: Always
+        env:
+          APP_MODE: "application"
+        healthcheck:
+          enabled: true
+          livenessProbe:
+            path: "/health"
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          readinessProbe:
+            path: "/health"
+            initialDelaySeconds: 10
+            periodSeconds: 20
+  - fullnameOverride: api-server-worker
+    serviceAccount:
+      create: true
+      annotations:
+        eks.amazonaws.com/role-arn: "arn:aws:iam::183295448290:role/atlas-api-server-role"
+    containers:
+      - fullnameOverride: api-server-worker
+        port: 8000
+        imagePullPolicy: Always
+        env:
+          APP_MODE: "application"
+        healthcheck:
+          enabled: true
+          livenessProbe:
+            path: "/health"
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          readinessProbe:
+            path: "/health"
+            initialDelaySeconds: 10
+            periodSeconds: 20  
+jobs:
+  - name: dbmigrate-job # required  
+    excludeSecretsFromDefault: true
+    serviceAccount:
+      create: false
+    annotations:
+      argocd.argoproj.io/hook: PreSync
+    containers:
+      - name: "dbmigrate-job" #required
+        env:
+          APP_MODE: "migration"
+        secrets:
+          injection:
+            - server-dbmigrate-env
+        resources:
+          requests:
+            memory: 512Mi
+          limits:
+            memory: 512Mi
