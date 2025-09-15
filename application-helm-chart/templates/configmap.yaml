@@ -1,0 +1,73 @@
+{{- if .Values.default.configMaps }}
+{{- if .Values.default.configMaps.injection.enabled  }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ print (include "helper.name" $) "-injection" }}
+  namespace: {{ $.Release.Namespace }}
+  {{- if or $.Values.default.labels.all $.Values.default.labels.configMap .labels }}
+  labels:
+  {{- (include "helper.labels" $) | nindent 4 }}
+  {{- with .labels }}
+  {{- toYaml . | nindent 4}}
+  {{- end }}
+  {{- with $.Values.default.labels.configMap }}
+  {{- toYaml . | nindent 4}}
+  {{- end }}
+  {{- end }}
+  {{- if or $.Values.default.labels.all $.Values.default.labels.configMap .annotations }}
+  annotations:
+  {{- (include "helper.annotations" $) | nindent 4 }}
+  {{- with $.Values.default.annotations.configMap }}
+  {{- toYaml . | nindent 4}}
+  {{- end }}
+  {{- with .annotations }}
+  {{- toYaml . | nindent 4}}
+  {{- end }}
+  {{- end }}
+data:
+  {{- $data := .Values.default.configMaps.injection.path }}
+  {{- range ( split "\n" $data) }}
+    {{ replace "=" ": " . }}
+  {{- end -}}
+{{- end }}
+{{- end }}
+
+{{- if .Values.default.configMaps }}
+{{- if .Values.default.configMaps.volumeMount.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ print (include "helper.name" $) "-volumemount" }}
+  namespace: {{ $.Release.Namespace }}
+  {{- if or $.Values.default.labels.all $.Values.default.labels.configMap .labels }}
+  labels:
+  {{- (include "helper.labels" $) | nindent 4 }}
+  {{- with .labels }}
+  {{- toYaml . | nindent 4}}
+  {{- end }}
+  {{- with $.Values.default.labels.configMap }}
+  {{- toYaml . | nindent 4}}
+  {{- end }}
+  {{- end }}
+  {{- if or $.Values.default.labels.all $.Values.default.labels.configMap .annotations }}
+  annotations:
+  {{- (include "helper.annotations" $) | nindent 4 }}
+  {{- with $.Values.default.annotations.configMap }}
+  {{- toYaml . | nindent 4}}
+  {{- end }}
+  {{- with .annotations }}
+  {{- toYaml . | nindent 4}}
+  {{- end }}
+  {{- end }}
+data:
+  {{- if  .Values.default.configMaps.volumeMount.enabled }}
+  {{- range  $.Values.default.configMaps.volumeMount.data }}
+  {{- (print (.fileName)) | nindent 4 -}}: |-
+  {{- .content | nindent 6 -}}
+  {{- end -}}
+  {{- end -}}
+{{- end }}
+{{- end }}

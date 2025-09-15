@@ -1,0 +1,390 @@
+{{- range $.Values.cronjobs }}
+{{- $cronjob := . -}}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ template "helper.fullname" (merge . $) }}
+  namespace: {{ $.Release.Namespace }}
+  {{- if or $.Values.default.labels.all $.Values.default.labels.cronjobs .labels }}
+  labels:
+  {{- (include "helper.labels" $) | nindent 4 }}
+  {{- with .labels }}
+  {{- toYaml . | nindent 4}}
+  {{- end }}
+  {{- with $.Values.default.labels.cronjobs }}
+  {{- toYaml . | nindent 4}}
+  {{- end }}
+  {{- end }}
+  {{- if or $.Values.default.labels.all $.Values.default.labels.cronjobs .annotations }}
+  annotations:
+  {{- (include "helper.annotations" $) | nindent 4 }}
+  {{- with $.Values.default.annotations.cronjobs }}
+  {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .annotations }}
+  {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- end }}
+spec:
+  {{- with .suspend }}
+  suspend: {{ default false . }}
+  {{- end }}
+  {{- with .concurrencyPolicy }}
+  concurrencyPolicy: {{ default "Allow" . }}
+  {{- end }}
+  {{- with .startingDeadlineSeconds }}
+  startingDeadlineSeconds: {{ . }}
+  {{- end }}
+  successfulJobsHistoryLimit: {{ default "3" .successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit:  {{ default "2" .failedJobsHistoryLimit }}
+  schedule: {{ required "Please provide shedule for cronJob." .schedule | quote}}
+  jobTemplate:
+    metadata:
+      name: {{ template "helper.fullname" (merge . $) }}
+    spec:
+      template:
+        metadata:
+          {{- if or $.Values.default.labels.all $.Values.default.labels.cronjobs .labels }}
+          labels:
+          {{- (include "helper.labels" $) | nindent 12 }}
+          {{- with .labels }}
+          {{- toYaml . | nindent 12}}
+          {{- end }}
+          {{- with $.Values.default.labels.cronjobs }}
+          {{- toYaml . | nindent 12}}
+          {{- end }}
+          {{- end }}
+          {{- if or $.Values.default.labels.all $.Values.default.labels.cronjobs .annotations }}
+          annotations:
+          {{- (include "helper.annotations" $) | nindent 12 }}
+          {{- with $.Values.default.annotations.cronjobs }}
+          {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .annotations }}
+          {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- end }}
+        spec:
+          {{- if $.Values.default.privateDockerRepo }}
+          {{- if $.Values.default.privateDockerRepo.enabled }}
+          imagePullSecrets:
+           - name: {{ print (include "helper.name" $) "-private-docker-repo" }}
+          {{- end }}
+          {{- end }}
+          volumes:
+          {{- if or $.Values.default.configMaps }}
+          {{- if $.Values.default.configMaps.volumeMount.enabled }}
+            - name: {{ print (include "helper.name" $) "-configMap" }}
+              configMap:
+                name: {{ print (include "helper.name" $) "-volumeMount" }}
+                items:
+                {{- range  $.Values.default.configMaps.volumeMount.data }}
+                  - key: {{ .fileName }}
+                    path: {{ .fileName -}} 
+                {{ end -}}
+          {{- end }}
+          {{- end }}
+          {{- if or $.Values.default.externalSecrets }}
+          {{- if not $cronjob.excludeSecretsFromDefault }}
+          {{- if $.Values.default.externalSecrets.volumeMount }}
+          {{- range $secret := $.Values.default.externalSecrets.volumeMount.secrets }}
+          {{- if not .createOnly }}
+            - name: {{ (print (include "helper.name" $) "-" ($secret.secretName)) }}
+              secret:
+                secretName: {{ (print (include "helper.name" $) "-" ($secret.secretName)) }}
+                items: 
+          {{- range $secret.data }}
+                - key: {{ .fileName }}
+                  path: {{ .fileName }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- range $cronjob := $.Values.jobs }}
+          {{- range $container := .containers }}
+          {{- if .secrets }}
+          {{- if .secrets.volumeMount }}
+          {{- range $secret := .secrets.volumeMount.secrets }}
+            - name: {{ ($secret.secretName) }}
+              secret:
+                secretName: {{ ($secret.secretName) }}
+                items: 
+          {{- range $secret.data }}
+                - key: {{ .fileName }}
+                  path: {{ .fileName }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- range $container := .initContainers }}
+          {{- if .secrets }}
+          {{- if .secrets.volumeMount }}
+          {{- range $secret := .secrets.volumeMount.secrets }}
+            - name: {{ ($secret.secretName) }}
+              secret:
+                secretName: {{ ($secret.secretName) }}
+                items: 
+          {{- range $secret.data }}
+                - key: {{ .fileName }}
+                  path: {{ .fileName }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- if .initContainers }}
+          initContainers:
+          {{- range .initContainers }}
+          - name: {{ print (include "helper.fullname" (merge . $))  }}
+            {{- $commonimage := print $.Values.default.image.repository ":" $.Values.default.image.tag }}
+            {{- $image := ""}}
+            {{- if .image }}
+            {{- $image = print .image.repository ":" .image.tag }}
+            {{- end}}
+            image: {{ default $commonimage $image  }}
+            envFrom:
+            {{- if $.Values.default.configMaps }}
+            {{- if $.Values.default.configMaps.injection.enabled }} 
+            - configMapRef:
+                name: {{ print (include "helper.name" $) "-injection" }}
+            {{- end }}
+            {{- end}}
+            {{- if not $cronjob.excludeSecretsFromDefault }}
+            {{- if $.Values.default.externalSecrets.injection }}
+            {{- range $secret := $.Values.default.externalSecrets.injection.secrets }} 
+            {{- if not $secret.createOnly }}
+            {{- if $secret.dataFrom }}
+            - secretRef:
+                name: {{ (print (include "helper.name" $) "-" ($secret.secretName)) }}
+            {{- end }}
+            {{- if $secret.data }}
+            - secretRef:
+                name: {{ (print (include "helper.name" $) "-" ($secret.secretName)) }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            {{- if .secrets }} 
+            {{- if .secrets.injection }} 
+            {{- range .secrets.injection.secrets }}
+            - secretRef:
+                name: {{ . }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            volumeMounts:
+            {{- if $.Values.default.configMaps }}
+            {{- if $.Values.default.configMaps.volumeMount.enabled }}
+            {{- range  $.Values.default.configMaps.volumeMount.data }}
+            - name: {{ print (include "helper.name" $) "-" (.name) }}
+              mountPath: {{ default "/tmp/test" (default $.Values.default.configMaps.volumeMount.commonMountPath .mountPath) }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            {{- if not $cronjob.excludeSecretsFromDefault }}
+            {{- if $.Values.default.externalSecrets.volumeMount }}
+            {{- range $secret := $.Values.default.externalSecrets.volumeMount.secrets }}
+            {{- range $secret.data }}
+            - name: {{ (print (include "helper.name" $) "-" ($secret.secretName)) }}
+              mountPath: {{ default "/tmp/test" .mountPath }}
+              subPath: {{ .fileName }}
+            {{- end }}  
+            {{- end }}
+            {{- end }} 
+            {{- end}}
+            {{- if .secrets }}
+            {{- if .secrets.volumeMount }}
+            {{- range $secret := .secrets.volumeMount.secrets }}
+            {{- range $secret.data }}
+            - name: {{ ($secret.secretName) }}
+              mountPath: {{ default "/tmp/test" .mountPath }}
+              subPath: {{ .fileName }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            {{- if .env}}
+            env:
+            {{- range $key,$value := .env }}
+            - name: {{ $key | upper | quote}}
+              value: {{ $value | quote}}
+            {{- end }}
+            {{- end }}
+            {{- if .command }}
+            command:  
+            {{- range .command }} 
+              - {{  . | quote}}
+            {{- end }} 
+            {{- end }}
+            {{- if .args }}
+            args:  
+                {{- range .args }} 
+              - {{  . | quote}}
+                {{- end }} 
+            {{- end }}
+            {{- end }}
+            {{- end }}
+          containers:
+          {{- range .containers }}
+          - name: {{ print (include "helper.fullname" (merge . $)) }}
+            {{- $commonimage := print $.Values.default.image.repository ":" $.Values.default.image.tag }}
+            {{- $image := ""}}
+            {{- if .image }}
+            {{- $image = print .image.repository ":" .image.tag }}
+            {{- end}}
+            image: {{ default $commonimage $image  }}
+            imagePullPolicy: {{default "Always" .imagePullPolicy }}
+            envFrom:
+            {{- if $.Values.default.configMaps }}
+            {{- if $.Values.default.configMaps.injection.enabled }} 
+            - configMapRef:
+                name: {{ print (include "helper.name" $) "-injection" }} 
+            {{- end }}
+            {{- end }}
+            {{- if not $cronjob.excludeSecretsFromDefault }}
+            {{- if $.Values.default.externalSecrets }}
+            {{- if $.Values.default.externalSecrets.injection }}
+            {{- range $secret := $.Values.default.externalSecrets.injection.secrets }} 
+            {{- if not $secret.createOnly }}
+            {{- if $secret.dataFrom }}
+            - secretRef:
+                name: {{ (print (include "helper.name" $) "-" ($secret.secretName)) }}
+            {{- end }}
+            {{- if $secret.data }}
+            - secretRef:
+                name: {{ (print (include "helper.name" $) "-" ($secret.secretName)) }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            {{- if .secrets }} 
+            {{- if .secrets.injection }} 
+            {{- range .secrets.injection.secrets }}
+            - secretRef:
+                name: {{ . }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            volumeMounts:
+            {{- if $.Values.default.configMaps }}
+            {{- if $.Values.default.configMaps.volumeMount.enabled }}
+            {{- range  $.Values.default.configMaps.volumeMount.data }}
+            - name: {{ print (include "helper.name" $) "-" (.name) }}
+              mountPath: {{ default "/tmp/test" (default $.Values.default.configMaps.volumeMount.commonMountPath .mountPath) }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            {{- if not $cronjob.excludeSecretsFromDefault }}
+            {{- if $.Values.default.externalSecrets }}
+            {{- if $.Values.default.externalSecrets.volumeMount }}
+            {{- range $secret := $.Values.default.externalSecrets.volumeMount.secrets }}
+            {{- range $secret.data }}
+            - name: {{ (print (include "helper.name" $) "-" ($secret.secretName)) }}
+              mountPath: {{ default "/tmp/test" .mountPath }}
+              subPath: {{ .fileName }}
+            {{- end }}  
+            {{- end }} 
+            {{- end }}
+            {{- end }}
+            {{- end}}
+            {{- if .secrets }}
+            {{- if .secrets.volumeMount }}
+            {{- range $secret := .secrets.volumeMount.secrets }}
+            {{- range $secret.data }}
+            - name: {{ ($secret.secretName) }}
+              mountPath: {{ default "/tmp/test" .mountPath }}
+              subPath: {{ .fileName }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            {{- if .env}}
+            env:
+            {{- range $key,$value := .env }}
+            - name: {{ $key | upper | quote}}
+              value: {{ $value | quote}}
+            {{- end }}
+            {{- end }}
+            {{- if .command }}
+            command:  
+                {{- range .command }} 
+              - {{  . | quote}}
+                {{- end }} 
+            {{- end }}
+            {{- if .args }}
+            args:  
+                {{- range .args }} 
+              - {{  . | quote}}
+                {{- end }} 
+            {{- end }}
+            resources:
+              requests:
+              {{- if or $.Values.default.resources.requests.cpu (((.resources).requests).cpu) }}
+                cpu: {{ dig  "resources" "requests" "cpu" ($.Values.default.resources.requests.cpu) . }}
+              {{- end }}
+                memory: {{ dig  "resources" "requests" "memory" ($.Values.default.resources.requests.memory) . }}
+              limits:
+              {{- if or $.Values.default.resources.limits.cpu (((.resources).limits).cpu) }}
+                cpu: {{ dig  "resources" "limits" "cpu" ($.Values.default.resources.limits.cpu) . }}
+              {{- end }}
+                memory: {{ dig  "resources" "limits" "memory" ($.Values.default.resources.limits.memory) . }}
+          {{- end }}
+          restartPolicy: {{ default "OnFailure" .jobRestartPolicy }}
+          {{- if .serviceAccount }}
+          {{- if .serviceAccount.create }}
+          serviceAccountName: {{ .serviceAccount.name | default (print (include "helper.fullname" (merge . $)))}}
+          {{- end }}
+          {{- end }}
+          terminationGracePeriodSeconds: {{ default 30 .terminationGracePeriodSeconds }}
+    {{- with .nodeSelector }}
+    nodeSelector:
+    {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .affinity }}
+    affinity:
+    {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .tolerations }}
+    tolerations:
+    {{- toYaml . | nindent 8 }}
+    {{- end }}
+
+{{- if .serviceAccount }}
+{{- if .serviceAccount.create }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .serviceAccount.name | default (print (include "helper.fullname" (merge . $)))}}
+  namespace: {{ $.Release.Namespace }}
+  {{- if or $.Values.default.labels.all $.Values.default.labels.cronjobs .labels }}
+  labels:
+  {{- (include "helper.labels" $) | nindent 4 }}
+  {{- with .labels }}
+  {{- toYaml . | nindent 4}}
+  {{- end }}
+  {{- with $.Values.default.labels.cronjobs }}
+  {{- toYaml . | nindent 4}}
+  {{- end }}
+  {{- end }}
+  {{- if or $.Values.default.labels.all $.Values.default.labels.cronjobs .annotations }}
+  annotations:
+  {{- (include "helper.annotations" $) | nindent 4 }}
+  {{- with $.Values.default.annotations.cronjobs }}
+  {{- toYaml . | nindent 4}}
+  {{- end }}
+  {{- with .annotations }}
+  {{- toYaml . | nindent 4}}
+  {{- end }}
+  {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

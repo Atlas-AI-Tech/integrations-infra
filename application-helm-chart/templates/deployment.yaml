@@ -1,0 +1,570 @@
+{{- range $deployments := $.Values.deployments }}
+{{- $deployment := . }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "helper.fullname" (merge . $) }}
+  namespace: {{ $.Release.Namespace }}
+  {{- if or $.Values.default.labels.all $.Values.default.labels.deployments .labels }}
+  labels:
+  {{- (include "helper.labels" $) | nindent 4 }}
+  {{- with .labels }}
+  {{- toYaml . | nindent 4}}
+  {{- end }}
+  {{- with $.Values.default.labels.deployments }}
+  {{- toYaml . | nindent 4}}
+  {{- end }}
+  {{- end }}
+  {{- if or $.Values.default.labels.all $.Values.default.labels.deployments .annotations }}
+  annotations:
+  {{- (include "helper.annotations" $) | nindent 4 }}
+  {{- if $.Values.default.annotations }}
+  {{- with $.Values.default.annotations.deployments }}
+  {{- toYaml . | nindent 4}}
+  {{- end }}
+  {{- end }}
+  {{- with .annotations }}
+  {{- toYaml . | nindent 4}}
+  {{- end }}
+  {{- end }}
+spec:
+  selector:
+    matchLabels:
+      {{- print (include "helper.selectorLabels" (merge . $)) | nindent 6 }}
+  {{- if  .rollingUpdate }}
+  strategy:
+    type: RollingUpdate   
+    rollingUpdate:
+      maxSurge: {{ default "%25" .rollingUpdate.maxSurge }}
+      maxUnavailable: {{ default "%25" .rollingUpdate.maxUnavailable }}
+  {{- end }}
+  {{- if not .keda }}
+  replicas: {{ default $.Values.default.replicaCount .replicaCount }}
+  {{- end }}
+  revisionHistoryLimit: {{ default 5 .revisionHistoryLimit }}
+  template:
+    metadata:
+      annotations:
+  {{- with .podAnnotations -}}
+  {{- toYaml . | nindent 8 }}
+  {{- end }}
+  {{- (include "helper.annotations" $) | nindent 8 }}
+  {{- with .annotations -}}
+  {{- toYaml . | nindent 8}}
+  {{- end }}
+      labels:
+  {{- (include "helper.labels" $) | nindent 8}}
+  {{- print (include "helper.selectorLabels" (merge . $)) | nindent 8 }}
+  {{- with .labels -}}
+  {{ toYaml . | nindent 8}}
+  {{- end }}
+  {{- with $.Values.default.labels.deployments }}
+  {{- toYaml . | nindent 8}}
+  {{- end }}
+    spec:
+      {{- if .serviceAccount }}
+      {{- if .serviceAccount.create }}
+      serviceAccountName: {{ .serviceAccount.name | default (print (include "helper.fullname" (merge . $)))}}
+      {{- end }}
+      {{- end }}
+      {{- if $.Values.default.privateDockerRepo }}
+      {{- if $.Values.default.privateDockerRepo.enabled }}
+      imagePullSecrets:
+       - name: {{ print (include "helper.name" $) "-private-docker-repo" }}
+      {{- end }}
+      {{- end }}
+      volumes:
+      {{- if $.Values.default.volumeMount }}
+      {{- if $.Values.default.configMaps.volumeMount.enabled }}
+        - name: {{ print (include "helper.name" $) "-configMap" }}
+          configMap:
+            name: {{ print (include "helper.name" $) "-volumeMount" }}
+            items:
+            {{- range  $.Values.default.configMaps.volumeMount.data }}
+              - key: {{ .fileName }}
+                path: {{ .fileName -}} 
+            {{ end -}}
+      {{- end }}
+      {{- end }}
+      {{- if $.Values.default.externalSecrets }}
+      {{- if not $deployment.excludeSecretsFromDefault }}
+      {{- if $.Values.default.externalSecrets.volumeMount }}
+      {{- range $secret := $.Values.default.externalSecrets.volumeMount.secrets }}
+      {{- if not .createOnly }}
+        - name: {{ (print (include "helper.name" $) "-" ($secret.secretName)) }}
+          secret:
+            secretName: {{ (print (include "helper.name" $) "-" ($secret.secretName)) }}
+            items: 
+      {{- range $secret.data }}
+            - key: {{ .fileName }}
+              path: {{ .fileName }}
+      {{- end }}
+      {{- end }}
+      {{- end }}
+      {{- end }}
+      {{- end }}
+      {{- end }}
+      {{- range $deployments := $.Values.deployments }}
+      {{- range $container := .containers }}
+      {{- if .secrets }}
+      {{- if .secrets.volumeMount }}
+      {{- range $secret := .secrets.volumeMount.secrets }}
+        - name: {{ ($secret.secretName) }}
+          secret:
+            secretName: {{ ($secret.secretName) }}
+            items: 
+      {{- range $secret.data }}
+            - key: {{ .keyName }}
+              path: {{ .fileName }}
+      {{- end }}
+      {{- end }}
+      {{- end }}
+      {{- end }}
+      {{- end }}
+      {{- range $container := .initContainers }}
+      {{- if .secrets }}
+      {{- if .secrets.volumeMount }}
+      {{- range $secret := .secrets.volumeMount.secrets }}
+        - name: {{ ($secret.secretName) }}
+          secret:
+            secretName: {{ ($secret.secretName) }}
+            items: 
+      {{- range $secret.data }}
+            - key: {{ .keyName }}
+              path: {{ .fileName }}
+      {{- end }}
+      {{- end }}
+      {{- end }}
+      {{- end }}
+      {{- end }}
+      {{- end }}
+      {{- if .initContainers }}
+      initContainers:
+      {{- range .initContainers }}
+      - name: {{ include "helper.fullname" (merge . $) }}
+        {{- $commonimage := print $.Values.default.image.repository ":" $.Values.default.image.tag }}
+        {{- $image := ""}}
+        {{- if .image }}
+        {{- $image = print .image.repository ":" .image.tag }}
+        {{- end}}
+        image: {{ default $commonimage $image  }}
+        imagePullPolicy: {{default "IfNotPresent" .imagePullPolicy }}
+        envFrom:
+        {{- if $.Values.default.configMaps }}
+        {{- if $.Values.default.configMaps.injection.enabled }} 
+        - configMapRef:
+            name: {{ print (include "helper.name" $) "-injection" }}
+        {{- end }}
+        {{- end }}
+        {{- if not $deployment.excludeSecretsFromDefault  }}
+        {{- if $.Values.default.externalSecrets.injection }}
+        {{- range $secret := $.Values.default.externalSecrets.injection.secrets }} 
+        {{- if not $secret.createOnly  }}
+        {{- if $secret.dataFrom }}
+        - secretRef:
+            name: {{ (print (include "helper.name" $) "-" ($secret.secretName)) }}
+        {{- end }}
+        {{- if $secret.data }}
+        - secretRef:
+            name: {{ (print (include "helper.name" $) "-" ($secret.secretName)) }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- if .secrets }} 
+        {{- if .secrets.injection }} 
+        {{- range .secrets.injection.secrets }}
+        - secretRef:
+            name: {{ . }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
+        volumeMounts:
+        {{- if $.Values.default.configMaps }}
+        {{- if $.Values.default.configMaps.volumeMount.enabled }}
+        {{- range  $.Values.default.configMaps.volumeMount.data }}
+        - name: {{ print (include "helper.name" $) "-" (.name) }}
+          mountPath: {{ default "/tmp/test" (default $.Values.default.configMaps.volumeMount.commonMountPath .mountPath) }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- if not $deployment.excludeSecretsFromDefault }}
+        {{- if $.Values.default.externalSecrets.volumeMount }}
+        {{- range $secret := $.Values.default.externalSecrets.volumeMount.secrets }}
+        {{- range $secret.data }}
+        - name: {{ (print (include "helper.name" $) "-" ($secret.secretName)) }}
+          mountPath: {{ default "/tmp/test" .mountPath }}
+          subPath: {{ .fileName }}
+        {{- end }}  
+        {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- if .secrets }}
+        {{- if .secrets.volumeMount }}
+        {{- range $secret := .secrets.volumeMount.secrets }}
+        {{- range $secret.data }}
+        - name: {{ ($secret.secretName) }}
+          mountPath: {{ default "/tmp/test" .mountPath }}
+          subPath: {{ .fileName }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
+        env:
+        {{- range $key,$value := .env }}
+        - name: {{ $key | upper | quote}}
+          value: {{ $value | quote}}
+        {{- end }}
+        {{- if .command }}
+        command:  
+        {{- range .command }} 
+          - {{  . | quote}}
+        {{- end }} 
+        {{- end }}
+        {{- if .args }}
+        args:  
+            {{- range .args }} 
+          - {{  . | quote}}
+            {{- end }} 
+        {{- end }}
+      {{- end }}
+      {{- end }}
+      containers:
+      {{- range .containers }}
+      - name: {{ print (include "helper.fullname" (merge . $))}}
+        {{- $commonimage := print $.Values.default.image.repository ":" $.Values.default.image.tag }}
+        {{- $image := ""}}
+        {{- if .image }}
+        {{- $image = print .image.repository ":" .image.tag }}
+        {{- end }}
+        image: {{ default $commonimage $image  }}
+        imagePullPolicy: {{default "IfNotPresent" .imagePullPolicy }}
+        envFrom:
+        {{- if $.Values.default.configMaps }}
+        {{- if $.Values.default.configMaps.injection.enabled }} 
+        - configMapRef:
+            name: {{ print (include "helper.name" $) "-injection" }}
+        {{- end }}
+        {{- end }}
+        {{- if not $deployment.excludeSecretsFromDefault }}
+        {{- if $.Values.default.externalSecrets }}
+        {{- if $.Values.default.externalSecrets.injection }}
+        {{- range $secret := $.Values.default.externalSecrets.injection.secrets }} 
+        {{- if not $secret.createOnly  }}
+        {{- if $secret.dataFrom }}
+        - secretRef:
+            name: {{ (print (include "helper.name" $) "-" ($secret.secretName)) }}
+        {{- end }}
+        {{- if $secret.data }}
+        - secretRef:
+            name: {{ (print (include "helper.name" $) "-" ($secret.secretName)) }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- if .secrets }} 
+        {{- if .secrets.injection }} 
+        {{- range .secrets.injection.secrets }}
+        - secretRef:
+            name: {{ . }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
+        volumeMounts:
+        {{- if $.Values.default.configMaps }}
+        {{- if $.Values.default.configMaps.volumeMount.enabled }}
+        {{- range  $.Values.default.configMaps.volumeMount.data }}
+        - name: {{ print (include "helper.name" $) "-" (.name) }}
+          mountPath: {{ default "/tmp/test" (default $.Values.default.configMaps.volumeMount.commonMountPath .mountPath) }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- if not $deployment.excludeSecretsFromDefault }}
+        {{- if $.Values.default.externalSecrets }}
+        {{- if $.Values.default.externalSecrets.volumeMount }}
+        {{- range $secret := $.Values.default.externalSecrets.volumeMount.secrets }}
+        {{- range $secret.data }}
+        - name: {{ (print (include "helper.name" $) "-" ($secret.secretName)) }}
+          mountPath: {{ default "/tmp/test" .mountPath }}
+          subPath: {{ .fileName }}
+        {{- end }}  
+        {{- end }}
+        {{- end }} 
+        {{- end }}
+        {{- end }}
+        {{- if .secrets }}
+        {{- if .secrets.volumeMount }}
+        {{- range $secret := .secrets.volumeMount.secrets }}
+        {{- range $secret.data }}
+        - name: {{ ($secret.secretName) }}
+          mountPath: {{ default "/tmp/test" .mountPath }}
+          subPath: {{ .fileName }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- if .env}}
+        env:
+          {{- range $key,$value := .env }}
+          - name: {{ $key | upper | quote}}
+            value: {{ $value | quote}}
+          {{- end }}
+        {{- end }}
+        {{- if .command }}
+        command:  
+            {{- range .command }} 
+          - {{  . | quote}}
+            {{- end }} 
+        {{- end }}
+        {{- if .args }}
+        args:  
+            {{- range .args }} 
+          - {{  . | quote}}
+            {{- end }} 
+        {{- end }}
+        ports:
+        - name: http
+          containerPort: {{ default 80 .port }}
+          protocol: TCP
+        {{- if .healthcheck }}
+        {{- if .healthcheck.enabled }}
+        livenessProbe:
+          httpGet:
+            path: {{ default (default "/health" (((($.Values.default).defaultHealthcheck).livenessProbe).path)) ((((.healthcheck).livenessProbe).path)) }}
+            port: http
+          initialDelaySeconds: {{ default (default 30 (((($.Values.default).defaultHealthcheck).livenessProbe).initialDelaySeconds)) ((((.healthcheck).livenessProbe).initialDelaySeconds)) }}
+          periodSeconds: {{ default (default 30 (((($.Values.default).defaultHealthcheck).livenessProbe).periodSeconds)) ((((.healthcheck).livenessProbe).periodSeconds)) }}
+        readinessProbe:
+          httpGet:
+            path: {{ default (default "/health" (((($.Values.default).defaultHealthcheck).readinessProbe).path)) ((((.healthcheck).readinessProbe).path)) }}
+            port: http
+          initialDelaySeconds: {{ default (default 30 (((($.Values.default).defaultHealthcheck).readinessProbe).initialDelaySeconds)) ((((.healthcheck).readinessProbe).initialDelaySeconds)) }}
+          periodSeconds: {{ default (default 30 (((($.Values.default).defaultHealthcheck).readinessProbe).periodSeconds)) ((((.healthcheck).readinessProbe).periodSeconds)) }}
+        {{- end }}
+        {{- end }}
+        resources:
+          requests:
+          {{- if or $.Values.default.resources.requests.cpu (((.resources).requests).cpu) }}
+            cpu: {{ dig  "resources" "requests" "cpu" ($.Values.default.resources.requests.cpu) . }}
+          {{- end }}
+            memory: {{ dig  "resources" "requests" "memory" ($.Values.default.resources.requests.memory) . }}
+          limits:
+          {{- if or $.Values.default.resources.limits.cpu (((.resources).limits).cpu) }}
+            cpu: {{ dig  "resources" "limits" "cpu" ($.Values.default.resources.limits.cpu) . }}
+          {{- end }}
+            memory: {{ dig  "resources" "limits" "memory" ($.Values.default.resources.limits.memory) . }}
+      {{- end }}
+      terminationGracePeriodSeconds: {{default 30 .terminationGracePeriodSeconds }}
+      {{- with .nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+{{- if .serviceAccount }}
+{{- if .serviceAccount.create }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .serviceAccount.name | default (print (include "helper.fullname" (merge . $)))}}
+  namespace: {{ $.Release.Namespace }}
+  {{- if or $.Values.default.labels.all $.Values.default.labels.deployments .labels }}
+  labels:
+  {{- (include "helper.labels" $) | nindent 4 }}
+  {{- with .labels }}
+  {{- toYaml . | nindent 4}}
+  {{- end }}
+  {{- with $.Values.default.labels.deployments }}
+  {{- toYaml . | nindent 4}}
+  {{- end }}
+  {{- end }}
+  {{- if or $.Values.default.labels.all $.Values.default.labels.deployments .annotations }}
+  annotations:
+  {{- (include "helper.annotations" $) | nindent 4 }}
+  {{- if $.Values.default.annotations }}
+  {{- with $.Values.default.annotations.deployments }}
+  {{- toYaml . | nindent 4}}
+  {{- end }}
+  {{- end }}
+  {{- with .annotations }}
+  {{- toYaml . | nindent 4}}
+  {{- end }}
+  {{- with .serviceAccount.annotations }}
+  {{- toYaml . | nindent 4}}
+  {{- end }}
+  {{- end }}
+{{- end }}
+{{- end }}
+
+{{- if .autoscaling }}
+{{- if .autoscaling.enabled }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "helper.fullname" (merge . $) }}
+  namespace: {{ $.Release.Namespace }}
+  {{- if or $.Values.default.labels.all $.Values.default.labels.deployments .labels }}
+  labels:
+  {{- (include "helper.labels" $) | nindent 4 }}
+  {{- with .labels }}
+  {{- toYaml . | nindent 4}}
+  {{- end }}
+  {{- with $.Values.default.labels.deployments }}
+  {{- toYaml . | nindent 4}}
+  {{- end }}
+  {{- end }}
+  {{- if or $.Values.default.labels.all $.Values.default.labels.deployments .annotations }}
+  annotations:
+  {{- (include "helper.annotations" $) | nindent 4 }}
+  {{- if $.Values.default.annotations }}
+  {{- with $.Values.default.annotations.deployments }}
+  {{- toYaml . | nindent 4}}
+  {{- end }}
+  {{- end }}
+  {{- with .annotations }}
+  {{- toYaml . | nindent 4}}
+  {{- end }}
+  {{- end }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "helper.fullname" (merge . $) }}
+  minReplicas: {{ default 1 .autoscaling.minReplicas }}
+  maxReplicas: {{ default 1 .autoscaling.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ default 75 .autoscaling.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ default 80 .autoscaling.targetCPUUtilizationPercentage }}
+  {{- with .autoscaling.behavior }}
+  behavior:
+  {{- toYaml . | nindent 6 }}
+  {{- end }}
+{{- end }}
+{{- end }}
+{{- if .service }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "helper.fullname" (merge . $) }}
+  namespace: {{ $.Release.Namespace }}
+  {{- if or $.Values.default.labels.all $.Values.default.labels.deployments .labels }}
+  labels:
+  {{- (include "helper.labels" $) | nindent 4 }}
+  {{- with .labels }}
+  {{- toYaml . | nindent 4}}
+  {{- end }}
+  {{- with $.Values.default.labels.deployments }}
+  {{- toYaml . | nindent 4}}
+  {{- end }}
+  {{- end }}
+  {{- if or $.Values.default.annotations.all $.Values.default.annotations.deployments .annotations }}
+  annotations:
+  {{- (include "helper.annotations" $) | nindent 4 }}
+  {{- if $.Values.default.annotations }}
+  {{- with $.Values.default.annotations.deployments }}
+  {{- toYaml . | nindent 4}}
+  {{- end }}
+  {{- end }}
+  {{- with .annotations }}
+  {{- toYaml . | nindent 4}}
+  {{- end }}
+  {{- with .service.annotations }}
+  {{- toYaml . | nindent 4}}
+  {{- end }}
+  {{- end }}
+spec:
+  selector:
+    {{- print (include "helper.selectorLabels" (merge . $)) | nindent 4 }}
+  type: {{ .service.type }}
+  ports:
+  {{- range .service.ports }}
+    - port: {{ .port }}
+      targetPort: {{ .port }}
+      protocol: TCP
+      name: {{ required "deployments[*].service.ports.name is required " .name  }}
+  {{- end }}
+{{- end }}
+---
+
+{{- if .podDisruptionBudget }}
+---
+
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "helper.fullname" (merge . $) }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  {{- if .podDisruptionBudget.minAvailable }}
+  minAvailable: {{ default 1 .podDisruptionBudget.minAvailable }}
+  {{- end }}
+  {{- if .podDisruptionBudget.maxUnavailable }}
+  maxUnavailable: {{ default 1 .podDisruptionBudget.maxUnavailable }}
+  {{- end }}
+  selector: 
+    matchLabels:
+      {{- print (include "helper.selectorLabels" (merge . $)) | nindent 6 }}
+{{- end}}
+
+{{- if .keda }}
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: {{ include "helper.fullname" . }}
+spec:
+  scaleTargetRef:
+    name: {{ include "helper.fullname" . }}
+  {{- if eq (int .keda.idle) 0 }}
+  idleReplicaCount: {{ .keda.idle }}
+  {{- end }}
+  minReplicaCount: {{ required "min & max value for keda is mandatory" .keda.min }}
+  maxReplicaCount: {{ required "min & max value for keda is mandatory" .keda.max }}
+  pollingInterval: {{ default 10 .keda.pollingInterval }} 
+  cooldownPeriod:  {{ default 360 .keda.cooldownPeriod }}
+  advanced:
+    restoreToOriginalReplicaCount: true
+    horizontalPodAutoscalerConfig:                   
+      name: {{ include "helper.fullname" . }}
+      behavior:                                      # Optional. Use to modify HPA's scaling behavior
+        scaleDown:
+          stabilizationWindowSeconds: 300
+  triggers:
+  {{- range .keda.triggers }}
+  - type: {{ .type }}
+    {{- if .metricType }}
+    metricType: {{ .metricType }}
+    {{- end }}
+    metadata:
+      {{- toYaml .metadata | nindent 6 }}
+  {{- end }}
+{{- end }}
+{{- end}}

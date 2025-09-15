@@ -1,0 +1,9 @@
+apiVersion: v2
+appVersion: 1.0.0
+description: A generic helm chart for backend services in Kubernetes
+maintainers:
+- email: devopsadmin@helloatlas.in
+  name: devopsadmin
+name: application-helm-chart
+type: application
+version: 1.0.3

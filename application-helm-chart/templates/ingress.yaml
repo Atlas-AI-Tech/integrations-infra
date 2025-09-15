@@ -1,0 +1,36 @@
+{{- range $deployments := $.Values.deployments }}
+{{- $deployment := . -}}
+{{- if .service }}
+{{- range $service := .service.ports}}
+{{- if .ingress }}
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ include "helper.fullname" (merge $deployment $) }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  entryPoints:
+    - websecure
+  routes:
+ {{- if (.ingress).paths }}
+ {{- range $path := .ingress.paths }}
+    - match: {{ (printf "Host(`%s`) && PathPrefix(`%s`)" $service.ingress.host .) }}
+      kind: Rule   
+      services:
+        - kind: Service
+          name: {{ include "helper.fullname" (merge $deployment $) }}
+          port: {{ $service.port }}
+ {{- end }}
+ {{- else }}
+    - match: {{ (printf "Host(`%s`)" $service.ingress.host ) }}
+      kind: Rule   
+      services:
+        - kind: Service
+          name: {{ include "helper.fullname" (merge $deployment $) }}
+          port: {{ $service.port }}
+ {{- end }}
+  tls: {}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
