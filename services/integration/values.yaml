@@ -25,7 +25,7 @@ default:
           secretStoreName: aws-secret-manager
 
 deployments:
-  - fullnameOverride: api-server
+  - fullnameOverride: integrations
     serviceAccount:
       create: true
       annotations:
@@ -37,9 +37,29 @@ deployments:
           name: api
           ingress:
             enabled: true
-            host: "integration.dev.kreditmind.ai"
+            annotations:
+               kubernetes.io/ingress.class: alb
+               alb.ingress.kubernetes.io/group.name: atlas
+               alb.ingress.kubernetes.io/scheme: internal
+               alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80},{"HTTPS": 443}]'
+               alb.ingress.kubernetes.io/ssl-redirect: '443'
+               alb.ingress.kubernetes.io/healthcheck-path: /health
+               alb.ingress.kubernetes.io/healthcheck-timeout-seconds: '15'
+               alb.ingress.kubernetes.io/healthcheck-interval-seconds: '300'
+               alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-south-1:183295448290:certificate/9935b050-cc72-465d-9afa-9975803f6a3f
+            rules:
+            - host: integrations.dev.kreditmind.com
+              http:
+                paths:
+                  - path: /*
+                    pathType: ImplementationSpecific
+                    backend:
+                      service:
+                        name: integrations
+                        port:
+                          number: 80
     containers:
-      - fullnameOverride: api-server
+      - fullnameOverride: integrations
         port: 8000
         imagePullPolicy: Always
         env:
@@ -54,7 +74,7 @@ deployments:
             path: "/health"
             initialDelaySeconds: 10
             periodSeconds: 20
-  - fullnameOverride: api-server-worker
+  - fullnameOverride: integrations-worker
     serviceAccount:
       create: true
       annotations:
