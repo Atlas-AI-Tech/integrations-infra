@@ -31,15 +31,16 @@ deployments:
       annotations:
         eks.amazonaws.com/role-arn: "arn:aws:iam::183295448290:role/atlas-api-server-role"
     service:
-      type: ClusterIP
+      type: NodePort
       ports:
-        - port: 3000
+        - port: 8000
           name: api
           ingress:
             enabled: true
             annotations:
                kubernetes.io/ingress.class: alb
                alb.ingress.kubernetes.io/group.name: atlas
+               alb.ingress.kubernetes.io/target-type: instance
                alb.ingress.kubernetes.io/scheme: internal
                alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80},{"HTTPS": 443}]'
                alb.ingress.kubernetes.io/ssl-redirect: '443'
@@ -57,7 +58,7 @@ deployments:
                       service:
                         name: integrations
                         port:
-                          number: 80
+                          number: 8000
     containers:
       - fullnameOverride: integrations
         port: 8000
