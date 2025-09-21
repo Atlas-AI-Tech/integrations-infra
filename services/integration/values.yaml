@@ -176,13 +176,13 @@ deployments:
             memory: 128Mi
           limits:
             memory: 1024Mi
-  - fullnameOverride: integrations-worker-file-validation
+  - fullnameOverride: integrations-worker-post-llm-worker
     serviceAccount:
       create: true
       annotations:
         eks.amazonaws.com/role-arn: "arn:aws:iam::183295448290:role/atlas-api-server-role"
     containers:
-      - fullnameOverride: post_llm_worker
+      - fullnameOverride: integrations-worker-post-llm-worker
         imagePullPolicy: Always
         env:
           APP_MODE: "worker"
