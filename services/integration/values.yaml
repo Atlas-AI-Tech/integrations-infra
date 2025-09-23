@@ -64,7 +64,6 @@ deployments:
         imagePullPolicy: Always
         env:
           APP_MODE: "web"
-          FLASK_ENV: "uat"
         resources:
           requests:
             memory: 128Mi
@@ -91,7 +90,6 @@ deployments:
         imagePullPolicy: Always
         env:
           APP_MODE: "worker"
-          FLASK_ENV: "uat"
           CELERY_QUEUES: "uat-callback,uat-callback-failure"
           CELERY_CONCURRENCY: "5"
           CELERY_LOGLEVEL: "info"
@@ -110,7 +108,6 @@ deployments:
         imagePullPolicy: Always
         env:
           APP_MODE: "worker"
-          FLASK_ENV: "uat"
           CELERY_QUEUES: "uat-chat-notification-batch"
           CELERY_CONCURRENCY: "5"
           CELERY_LOGLEVEL: "info"
@@ -129,7 +126,6 @@ deployments:
         imagePullPolicy: Always
         env:
           APP_MODE: "worker"
-          FLASK_ENV: "uat"
           CELERY_QUEUES: "uat-chat-notification"
           CELERY_CONCURRENCY: "5"
           CELERY_LOGLEVEL: "info"
@@ -148,7 +144,6 @@ deployments:
         imagePullPolicy: Always
         env:
           APP_MODE: "worker"
-          FLASK_ENV: "uat"
           CELERY_QUEUES: "uat-chat-post-proccessing"
           CELERY_CONCURRENCY: "5"
           CELERY_LOGLEVEL: "info"
@@ -167,7 +162,6 @@ deployments:
         imagePullPolicy: Always
         env:
           APP_MODE: "worker"
-          FLASK_ENV: "uat"
           CELERY_QUEUES: "uat-llm-service"
           CELERY_CONCURRENCY: "5"
           CELERY_LOGLEVEL: "info"
@@ -186,7 +180,6 @@ deployments:
         imagePullPolicy: Always
         env:
           APP_MODE: "worker"
-          FLASK_ENV: "uat"
           CELERY_QUEUES: "uat-file-validation,uat-urls-result"
           CELERY_CONCURRENCY: "5"
           CELERY_LOGLEVEL: "info"
