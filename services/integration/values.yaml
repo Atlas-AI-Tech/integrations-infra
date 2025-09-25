@@ -67,8 +67,6 @@ deployments:
         resources:
           requests:
             memory: 128Mi
-          limits:
-            memory: 1024Mi
         healthcheck:
           enabled: true
           livenessProbe:
@@ -90,14 +88,12 @@ deployments:
         imagePullPolicy: Always
         env:
           APP_MODE: "worker"
-          CELERY_QUEUES: "uat-callback,uat-callback-failure"
+          CELERY_QUEUES: "develop-callback,develop-callback-failure"
           CELERY_CONCURRENCY: "5"
           CELERY_LOGLEVEL: "info"
         resources:
           requests:
             memory: 128Mi
-          limits:
-            memory: 1024Mi
   - fullnameOverride: integrations-worker-chat-notification-batch
     serviceAccount:
       create: true
@@ -108,14 +104,12 @@ deployments:
         imagePullPolicy: Always
         env:
           APP_MODE: "worker"
-          CELERY_QUEUES: "uat-chat-notification-batch"
+          CELERY_QUEUES: "develop-chat-notification-batch"
           CELERY_CONCURRENCY: "5"
           CELERY_LOGLEVEL: "info"
         resources:
           requests:
             memory: 128Mi
-          limits:
-            memory: 1024Mi
   - fullnameOverride: integrations-worker-chat-notification
     serviceAccount:
       create: true
@@ -126,7 +120,7 @@ deployments:
         imagePullPolicy: Always
         env:
           APP_MODE: "worker"
-          CELERY_QUEUES: "uat-chat-notification"
+          CELERY_QUEUES: "develop-chat-notification"
           CELERY_CONCURRENCY: "5"
           CELERY_LOGLEVEL: "info"
         resources:
@@ -144,14 +138,12 @@ deployments:
         imagePullPolicy: Always
         env:
           APP_MODE: "worker"
-          CELERY_QUEUES: "uat-chat-post-proccessing"
+          CELERY_QUEUES: "develop-chat-post-proccessing"
           CELERY_CONCURRENCY: "5"
           CELERY_LOGLEVEL: "info"
         resources:
           requests:
             memory: 128Mi
-          limits:
-            memory: 1024Mi
   - fullnameOverride: integrations-worker-llm-service
     serviceAccount:
       create: true
@@ -162,14 +154,12 @@ deployments:
         imagePullPolicy: Always
         env:
           APP_MODE: "worker"
-          CELERY_QUEUES: "uat-llm-service"
+          CELERY_QUEUES: "develop-llm-service"
           CELERY_CONCURRENCY: "5"
           CELERY_LOGLEVEL: "info"
         resources:
           requests:
             memory: 128Mi
-          limits:
-            memory: 1024Mi
   - fullnameOverride: integrations-worker-post-llm-worker
     serviceAccount:
       create: true
@@ -180,7 +170,7 @@ deployments:
         imagePullPolicy: Always
         env:
           APP_MODE: "worker"
-          CELERY_QUEUES: "uat-file-validation,uat-urls-result"
+          CELERY_QUEUES: "develop-file-validation,develop-urls-result"
           CELERY_CONCURRENCY: "5"
           CELERY_LOGLEVEL: "info"
 # jobs:
