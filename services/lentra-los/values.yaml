@@ -43,7 +43,7 @@ deployments:
                alb.ingress.kubernetes.io/scheme: internet-facing
                alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80},{"HTTPS": 443}]'
                alb.ingress.kubernetes.io/ssl-redirect: '443'
-               alb.ingress.kubernetes.io/healthcheck-path: /health
+               alb.ingress.kubernetes.io/healthcheck-path: /v3/verification/health
                alb.ingress.kubernetes.io/healthcheck-timeout-seconds: '15'
                alb.ingress.kubernetes.io/healthcheck-interval-seconds: '300'
                alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-south-1:183295448290:certificate/9935b050-cc72-465d-9afa-9975803f6a3f
@@ -70,11 +70,11 @@ deployments:
         healthcheck:
           enabled: true
           livenessProbe:
-            path: "/health"
+            path: "/v3/verification/health"
             initialDelaySeconds: 10
             periodSeconds: 20
           readinessProbe:
-            path: "/health"
+            path: "/v3/verification/health"
             initialDelaySeconds: 10
             periodSeconds: 20
   
