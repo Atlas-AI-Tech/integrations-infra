@@ -56,6 +56,7 @@ deployments:
         imagePullPolicy: Always
         env:
           APP_MODE: "web"
+          FLASK_ENV: "development"
         resources:
           requests:
             memory: 128Mi
