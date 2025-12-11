@@ -1,0 +1,181 @@
+projectName: lentra-los
+default:
+  annotations:
+    all:
+      app: lentra-los
+  labels:
+    all:
+      "app.kubernetes.io/part-of": lentra-los
+  image:
+    repository: "183295448290.dkr.ecr.ap-south-1.amazonaws.com/atlas/lentra-los"
+    tag: 0.0.0
+  resources:
+    requests:
+      memory: 256Mi
+    limits:
+      memory: 1024Mi
+  externalSecrets:
+    injection:
+      secrets:
+        - secretName: env
+          dataFrom:
+            secretKey: app/lentra-los
+          refreshInterval: 30s
+          secretStoreName: aws-secret-manager
+
+deployments:
+  - fullnameOverride: lentra-los
+    serviceAccount:
+      create: true
+      annotations:
+        eks.amazonaws.com/role-arn: "arn:aws:iam::183295448290:role/atlas-api-server-role"
+    service:
+      type: NodePort
+      ports:
+        - port: 8000
+          name: api
+          ingress:
+            enabled: true
+            annotations:
+               kubernetes.io/ingress.class: alb
+               alb.ingress.kubernetes.io/group.name: atlas
+               alb.ingress.kubernetes.io/target-type: instance
+               alb.ingress.kubernetes.io/scheme: internet-facing
+               alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80},{"HTTPS": 443}]'
+               alb.ingress.kubernetes.io/ssl-redirect: '443'
+               alb.ingress.kubernetes.io/healthcheck-path: /health
+               alb.ingress.kubernetes.io/healthcheck-timeout-seconds: '15'
+               alb.ingress.kubernetes.io/healthcheck-interval-seconds: '300'
+               alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-south-1:183295448290:certificate/9935b050-cc72-465d-9afa-9975803f6a3f
+            rules:
+            - host: lentra-loss.dev.kreditmind.com
+              http:
+                paths:
+                  - path: /*
+                    pathType: ImplementationSpecific
+                    backend:
+                      service:
+                        name: lentra-loss
+                        port:
+                          number: 8000
+    containers:
+      - fullnameOverride: lentra-los
+        port: 8000
+        imagePullPolicy: Always
+        env:
+          APP_MODE: "web"
+        resources:
+          requests:
+            memory: 128Mi
+        healthcheck:
+          enabled: true
+          livenessProbe:
+            path: "/health"
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          readinessProbe:
+            path: "/health"
+            initialDelaySeconds: 10
+            periodSeconds: 20
+  
+  - fullnameOverride: lentra-loss-worker-callback-worker
+    serviceAccount:
+      create: true
+      annotations:
+        eks.amazonaws.com/role-arn: "arn:aws:iam::183295448290:role/atlas-api-server-role"
+    containers:
+      - fullnameOverride: lentra-loss-worker-callback-worker
+        imagePullPolicy: Always
+        env:
+          APP_MODE: "worker"
+          CELERY_QUEUES: "uat-lentra-los-callback"
+          CELERY_CONCURRENCY: "5"
+          CELERY_LOGLEVEL: "info"
+        resources:
+          requests:
+            memory: 128Mi
+  - fullnameOverride: lentra-los-celery-crosschecks
+    serviceAccount:
+      create: true
+      annotations:
+        eks.amazonaws.com/role-arn: "arn:aws:iam::183295448290:role/atlas-api-server-role"
+    containers:
+      - fullnameOverride: lentra-los-celery-crosschecks
+        imagePullPolicy: Always
+        env:
+          APP_MODE: "worker"
+          CELERY_QUEUES: "uat-lentra-los-crosschecks"
+          CELERY_CONCURRENCY: "5"
+          CELERY_LOGLEVEL: "info"
+        resources:
+          requests:
+            memory: 128Mi
+  - fullnameOverride: lentra-los-worker-llmservice
+    serviceAccount:
+      create: true
+      annotations:
+        eks.amazonaws.com/role-arn: "arn:aws:iam::183295448290:role/atlas-api-server-role"
+    containers:
+      - fullnameOverride: lentra-los-worker-llmservice
+        imagePullPolicy: Always
+        env:
+          APP_MODE: "worker"
+          CELERY_QUEUES: "uat-lentra-los-llmservice"
+          CELERY_CONCURRENCY: "5"
+          CELERY_LOGLEVEL: "info"
+        resources:
+          requests:
+            memory: 128Mi
+          limits:
+            memory: 1024Mi
+  - fullnameOverride: lentra-loss-worker-postllm
+    serviceAccount:
+      create: true
+      annotations:
+        eks.amazonaws.com/role-arn: "arn:aws:iam::183295448290:role/atlas-api-server-role"
+    containers:
+      - fullnameOverride: lentra-loss-worker-chat-postllm
+        imagePullPolicy: Always
+        env:
+          APP_MODE: "worker"
+          CELERY_QUEUES: "uat-lentra-los-postllm"
+          CELERY_CONCURRENCY: "5"
+          CELERY_LOGLEVEL: "info"
+        resources:
+          requests:
+            memory: 128Mi
+  - fullnameOverride: lentra-loss-worker-llm-service
+    serviceAccount:
+      create: true
+      annotations:
+        eks.amazonaws.com/role-arn: "arn:aws:iam::183295448290:role/atlas-api-server-role"
+    containers:
+      - fullnameOverride: llm-service
+        imagePullPolicy: Always
+        env:
+          APP_MODE: "worker"
+          CELERY_QUEUES: "uatenv-llm-service"
+          CELERY_CONCURRENCY: "5"
+          CELERY_LOGLEVEL: "info"
+        resources:
+          requests:
+            memory: 128Mi
+# jobs:
+#   - name: dbmigrate-job # required  
+#     excludeSecretsFromDefault: true
+#     serviceAccount:
+#       create: false
+#     annotations:
+#       argocd.argoproj.io/hook: PreSync
+#     containers:
+#       - name: "dbmigrate-job" #required
+#         env:
+#           APP_MODE: "migration"
+#         secrets:
+#           injection:
+#             - server-dbmigrate-env
+#         resources:
+#           requests:
+#             memory: 512Mi
+#           limits:
+#             memory: 512Mi
