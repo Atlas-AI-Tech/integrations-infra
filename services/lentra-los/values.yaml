@@ -55,7 +55,7 @@ deployments:
                     pathType: ImplementationSpecific
                     backend:
                       service:
-                        name: lentra-loss
+                        name: lentra-los
                         port:
                           number: 8000
     containers:
