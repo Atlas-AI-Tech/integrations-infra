@@ -70,3 +70,11 @@ deployments:
             path: "/v1/health"
             initialDelaySeconds: 10
             periodSeconds: 20
+    tolerations:
+    - key: "dedicated"
+      operator: "Equal"
+      value: "address-service"
+      effect: "NoSchedule"
+    nodeSelector:
+      dedicated: address-service
+          
