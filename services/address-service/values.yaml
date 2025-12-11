@@ -13,7 +13,7 @@ default:
     requests:
       memory: 256Mi
     limits:
-      memory: 1024Mi
+      memory: 4096Mi
 
 deployments:
   - fullnameOverride: address-service
@@ -63,10 +63,10 @@ deployments:
         healthcheck:
           enabled: true
           livenessProbe:
-            path: "/v1/health "
+            path: "/v1/health"
             initialDelaySeconds: 10
             periodSeconds: 20
           readinessProbe:
-            path: "/v1/health "
+            path: "/v1/health"
             initialDelaySeconds: 10
             periodSeconds: 20
