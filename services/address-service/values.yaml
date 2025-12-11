@@ -1,0 +1,71 @@
+projectName: address-service
+default:
+  annotations:
+    all:
+      app: address-service
+  labels:
+    all:
+      "app.kubernetes.io/part-of": address-service
+  image:
+    repository: "183295448290.dkr.ecr.ap-south-1.amazonaws.com/atlas/address-service"
+    tag: 0.0.0
+  resources:
+    requests:
+      memory: 256Mi
+    limits:
+      memory: 1024Mi
+
+deployments:
+  - fullnameOverride: address-service
+    serviceAccount:
+      create: true
+      annotations:
+        eks.amazonaws.com/role-arn: "arn:aws:iam::183295448290:role/atlas-api-server-role"
+    service:
+      type: NodePort
+      ports:
+        - port: 8000
+          name: api
+          ingress:
+            enabled: true
+            annotations:
+               kubernetes.io/ingress.class: alb
+               alb.ingress.kubernetes.io/group.name: atlas
+               alb.ingress.kubernetes.io/target-type: instance
+               alb.ingress.kubernetes.io/scheme: internet-facing
+               alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80},{"HTTPS": 443}]'
+               alb.ingress.kubernetes.io/ssl-redirect: '443'
+               alb.ingress.kubernetes.io/healthcheck-path: /health
+               alb.ingress.kubernetes.io/healthcheck-timeout-seconds: '15'
+               alb.ingress.kubernetes.io/healthcheck-interval-seconds: '300'
+               alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-south-1:183295448290:certificate/9935b050-cc72-465d-9afa-9975803f6a3f
+            rules:
+            - host: address-services.dev.kreditmind.com
+              http:
+                paths:
+                  - path: /*
+                    pathType: ImplementationSpecific
+                    backend:
+                      service:
+                        name: address-services
+                        port:
+                          number: 8000
+    containers:
+      - fullnameOverride: address-service
+        port: 8000
+        imagePullPolicy: Always
+        env:
+          APP_MODE: "web"
+        resources:
+          requests:
+            memory: 128Mi
+        healthcheck:
+          enabled: true
+          livenessProbe:
+            path: "/health"
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          readinessProbe:
+            path: "/health"
+            initialDelaySeconds: 10
+            periodSeconds: 20
