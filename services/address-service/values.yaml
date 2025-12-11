@@ -62,10 +62,10 @@ deployments:
         healthcheck:
           enabled: true
           livenessProbe:
-            path: "/health"
+            path: "/v1/health "
             initialDelaySeconds: 10
             periodSeconds: 20
           readinessProbe:
-            path: "/health"
+            path: "/v1/health "
             initialDelaySeconds: 10
             periodSeconds: 20
