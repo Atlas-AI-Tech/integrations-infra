@@ -47,7 +47,7 @@ deployments:
                     pathType: ImplementationSpecific
                     backend:
                       service:
-                        name: address-services
+                        name: address-service
                         port:
                           number: 8000
     containers:
