@@ -154,7 +154,7 @@ deployments:
         imagePullPolicy: Always
         env:
           APP_MODE: "worker"
-          CELERY_QUEUES: "uatenv-llm-service"
+          CELERY_QUEUES: "uat-lentra-los-llmservice"
           CELERY_CONCURRENCY: "5"
           CELERY_LOGLEVEL: "info"
         resources:
