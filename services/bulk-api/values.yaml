@@ -13,7 +13,7 @@ default:
     requests:
       memory: 256Mi
     limits:
-      memory: 512Mi
+      memory: 1024Mi
   externalSecrets:
     injection:
       secrets:
