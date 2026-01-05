@@ -1,0 +1,73 @@
+projectName: atlas
+default:
+  annotations:
+    all:
+      app: bulk-api
+  labels:
+    all:
+      "app.kubernetes.io/part-of": bulk-api
+  image:
+    repository: "183295448290.dkr.ecr.ap-south-1.amazonaws.com/atlas/bulk-service"
+    tag: "1224c17e39eaeb2cfd5ffdd6e0ada62d0ba6cd6c"
+  resources:
+    requests:
+      memory: 256Mi
+    limits:
+      memory: 512Mi
+  externalSecrets:
+    injection:
+      secrets:
+        - secretName: env
+          dataFrom:
+            secretKey: app/bulk-service
+          refreshInterval: 30s
+          secretStoreName: aws-secret-manager
+
+deployments:
+  - fullnameOverride: bulk-service-api
+    serviceAccount:
+      create: true
+      annotations:
+        eks.amazonaws.com/role-arn: "arn:aws:iam::183295448290:role/bulk-service-role"
+    service:
+      type: NodePort
+      ports:
+        - port: 8000
+          name: api
+    containers:
+      - fullnameOverride: bulk-service-api
+        port: 8000
+        imagePullPolicy: Always
+        command: ["gunicorn"]
+        args: ["--workers", "3", "--bind", "0.0.0.0:8000", "app:app"]
+        resources:
+          requests:
+            memory: 256Mi
+          limits:
+            memory: 512Mi
+        healthcheck:
+          enabled: true
+          livenessProbe:
+            path: "/api/docs"
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe:
+            path: "/api/docs"
+            initialDelaySeconds: 30
+            periodSeconds: 30
+
+  - fullnameOverride: bulk-service-celery
+    serviceAccount:
+      create: true
+      annotations:
+        eks.amazonaws.com/role-arn: "arn:aws:iam::183295448290:role/bulk-service-role"
+    containers:
+      - fullnameOverride: bulk-service-celery
+        imagePullPolicy: Always
+        command: ["celery"]
+        args: ["-A", "celery_app", "worker", "-Q", "uat-bulk-llm-service", "--concurrency=10", "--loglevel=info"]
+        resources:
+          requests:
+            memory: 256Mi
+          limits:
+            memory: 512Mi
