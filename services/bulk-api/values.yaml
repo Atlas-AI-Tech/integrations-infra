@@ -40,11 +40,6 @@ deployments:
         imagePullPolicy: Always
         command: ["gunicorn"]
         args: ["--workers", "3", "--bind", "0.0.0.0:8000", "app:app"]
-        resources:
-          requests:
-            memory: 256Mi
-          limits:
-            memory: 512Mi
         healthcheck:
           enabled: true
           livenessProbe:
@@ -66,8 +61,3 @@ deployments:
         imagePullPolicy: Always
         command: ["celery"]
         args: ["-A", "celery_app", "worker", "-Q", "uat-bulk-llm-service", "--concurrency=10", "--loglevel=info"]
-        resources:
-          requests:
-            memory: 256Mi
-          limits:
-            memory: 512Mi
