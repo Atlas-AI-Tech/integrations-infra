@@ -128,22 +128,22 @@ deployments:
             memory: 128Mi
           limits:
             memory: 1024Mi
-  - fullnameOverride: lentra-loss-worker-postllm
-    serviceAccount:
-      create: true
-      annotations:
-        eks.amazonaws.com/role-arn: "arn:aws:iam::183295448290:role/atlas-api-server-role"
-    containers:
-      - fullnameOverride: lentra-loss-worker-chat-postllm
-        imagePullPolicy: Always
-        env:
-          APP_MODE: "worker"
-          CELERY_QUEUES: "uat-lentra-los-postllm"
-          CELERY_CONCURRENCY: "5"
-          CELERY_LOGLEVEL: "info"
-        resources:
-          requests:
-            memory: 128Mi
+  # - fullnameOverride: lentra-loss-worker-postllm
+  #   serviceAccount:
+  #     create: true
+  #     annotations:
+  #       eks.amazonaws.com/role-arn: "arn:aws:iam::183295448290:role/atlas-api-server-role"
+  #   containers:
+  #     - fullnameOverride: lentra-loss-worker-chat-postllm
+  #       imagePullPolicy: Always
+  #       env:
+  #         APP_MODE: "worker"
+  #         CELERY_QUEUES: "uat-lentra-los-postllm"
+  #         CELERY_CONCURRENCY: "5"
+  #         CELERY_LOGLEVEL: "info"
+  #       resources:
+  #         requests:
+  #           memory: 128Mi
   - fullnameOverride: lentra-loss-worker-llm-service
     serviceAccount:
       create: true
