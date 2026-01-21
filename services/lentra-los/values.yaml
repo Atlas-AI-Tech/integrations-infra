@@ -85,6 +85,19 @@ deployments:
       create: true
       annotations:
         eks.amazonaws.com/role-arn: "arn:aws:iam::183295448290:role/atlas-api-server-role"
+    keda:
+      enabled: true
+      min: 1
+      max: 6
+      pollingInterval: 30
+      cooldownPeriod: 300
+      triggers:
+        - type: aws-sqs-queue
+          metadata:
+            queueURL: https://sqs.ap-south-1.amazonaws.com/183295448290/uat-lentra-los-callback
+            queueLength: "30"
+            awsRegion: ap-south-1
+            identityOwner: operator
     containers:
       - fullnameOverride: lentra-loss-worker-callback-worker
         imagePullPolicy: Always
@@ -162,22 +175,23 @@ deployments:
         resources:
           requests:
             memory: 128Mi
-# jobs:
-#   - name: dbmigrate-job # required  
-#     excludeSecretsFromDefault: true
-#     serviceAccount:
-#       create: false
-#     annotations:
-#       argocd.argoproj.io/hook: PreSync
-#     containers:
-#       - name: "dbmigrate-job" #required
-#         env:
-#           APP_MODE: "migration"
-#         secrets:
-#           injection:
-#             - server-dbmigrate-env
-#         resources:
-#           requests:
-#             memory: 512Mi
-#           limits:
-#             memory: 512Mi
+jobs:
+  - name: dbmigrate-job
+    serviceAccount:
+      create: true
+      annotations:
+        eks.amazonaws.com/role-arn: "arn:aws:iam::183295448290:role/atlas-api-server-role"
+    annotations:
+      "helm.sh/hook": pre-upgrade,pre-install
+      "helm.sh/hook-weight": "-5"
+      "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+    containers:
+      - name: "dbmigrate-job"
+        env:
+          APP_MODE: "migration"
+        command: ["flask", "db", "upgrade"]
+        resources:
+          requests:
+            memory: 512Mi
+          limits:
+            memory: 512Mi

@@ -1,0 +1,58 @@
+{{- range $deployment := .Values.deployments }}
+{{- if $deployment.hpa }}
+{{- if $deployment.hpa.enabled }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ $deployment.fullnameOverride }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    app.kubernetes.io/managed-by: {{ $.Release.Service }}
+    {{- with $.Values.default.labels.all }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ $deployment.fullnameOverride }}
+  minReplicas: {{ $deployment.hpa.minReplicas | default 1 }}
+  maxReplicas: {{ $deployment.hpa.maxReplicas | default 5 }}
+  metrics:
+  {{- if $deployment.hpa.targetCPUUtilizationPercentage }}
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: {{ $deployment.hpa.targetCPUUtilizationPercentage }}
+  {{- end }}
+  {{- if $deployment.hpa.targetMemoryUtilizationPercentage }}
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: {{ $deployment.hpa.targetMemoryUtilizationPercentage }}
+  {{- end }}
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 15
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+      - type: Pods
+        value: 2
+        periodSeconds: 15
+      selectPolicy: Max
+{{- end }}
+{{- end }}
+{{- end }}
