@@ -211,12 +211,23 @@ jobs:
     annotations:
       "helm.sh/hook": pre-upgrade,pre-install
       "helm.sh/hook-weight": "-5"
-      "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+      "helm.sh/hook-delete-policy": before-hook-creation
+    ttlSecondsAfterFinished: 600
     containers:
       - name: "dbmigrate-job"
         env:
           APP_MODE: "migration"
-        command: ["flask", "db", "upgrade"]
+        command: ["sh", "-c"]
+        args: 
+          - |
+            echo "Starting DB migration at $(date)"
+            echo "Current migration status:"
+            flask db current
+            echo "Running migration upgrade:"
+            flask db upgrade
+            echo "New migration status:"
+            flask db current
+            echo "Migration completed at $(date) with exit code: $?"
         resources:
           requests:
             memory: 512Mi
