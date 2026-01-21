@@ -29,6 +29,12 @@ deployments:
       create: true
       annotations:
         eks.amazonaws.com/role-arn: "arn:aws:iam::183295448290:role/atlas-api-server-role"
+    hpa:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 6
+      targetCPUUtilizationPercentage: 70
+      targetMemoryUtilizationPercentage: 80
     service:
       type: NodePort
       ports:
@@ -69,6 +75,10 @@ deployments:
         resources:
           requests:
             memory: 128Mi
+            cpu: 100m
+          limits:
+            memory: 1024Mi
+            cpu: 200m
         healthcheck:
           enabled: true
           livenessProbe:
@@ -98,6 +108,8 @@ deployments:
             queueLength: "30"
             awsRegion: ap-south-1
             identityOwner: operator
+          authenticationRef:
+            name: aws-sqs-auth
     containers:
       - fullnameOverride: lentra-loss-worker-callback-worker
         imagePullPolicy: Always
@@ -114,6 +126,21 @@ deployments:
       create: true
       annotations:
         eks.amazonaws.com/role-arn: "arn:aws:iam::183295448290:role/atlas-api-server-role"
+    keda:
+      enabled: true
+      min: 1
+      max: 6
+      pollingInterval: 30
+      cooldownPeriod: 300
+      triggers:
+        - type: aws-sqs-queue
+          metadata:
+            queueURL: https://sqs.ap-south-1.amazonaws.com/183295448290/uat-lentra-los-crosschecks
+            queueLength: "30"
+            awsRegion: ap-south-1
+            identityOwner: operator
+          authenticationRef:
+            name: aws-sqs-auth
     containers:
       - fullnameOverride: lentra-los-celery-crosschecks
         imagePullPolicy: Always
@@ -130,6 +157,21 @@ deployments:
       create: true
       annotations:
         eks.amazonaws.com/role-arn: "arn:aws:iam::183295448290:role/atlas-api-server-role"
+    keda:
+      enabled: true
+      min: 1
+      max: 6
+      pollingInterval: 30
+      cooldownPeriod: 300
+      triggers:
+        - type: aws-sqs-queue
+          metadata:
+            queueURL: https://sqs.ap-south-1.amazonaws.com/183295448290/uat-lentra-los-llmservice
+            queueLength: "30"
+            awsRegion: ap-south-1
+            identityOwner: operator
+          authenticationRef:
+            name: aws-sqs-auth
     containers:
       - fullnameOverride: lentra-los-worker-llmservice
         imagePullPolicy: Always
@@ -159,22 +201,7 @@ deployments:
   #       resources:
   #         requests:
   #           memory: 128Mi
-  - fullnameOverride: lentra-loss-worker-llm-service
-    serviceAccount:
-      create: true
-      annotations:
-        eks.amazonaws.com/role-arn: "arn:aws:iam::183295448290:role/atlas-api-server-role"
-    containers:
-      - fullnameOverride: llm-service
-        imagePullPolicy: Always
-        env:
-          APP_MODE: "worker"
-          CELERY_QUEUES: "uat-lentra-los-llmservice"
-          CELERY_CONCURRENCY: "5"
-          CELERY_LOGLEVEL: "info"
-        resources:
-          requests:
-            memory: 128Mi
+
 jobs:
   - name: dbmigrate-job
     serviceAccount:
