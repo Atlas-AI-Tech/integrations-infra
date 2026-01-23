@@ -127,6 +127,7 @@ deployments:
           tag: latest
         imagePullPolicy: Always
         port: 8080
+        portName: health
         resources:
           requests:
             cpu: 10m
