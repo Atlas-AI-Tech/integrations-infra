@@ -121,6 +121,35 @@ deployments:
         resources:
           requests:
             memory: 128Mi
+      - name: health-sidecar
+        image: 183295448290.dkr.ecr.ap-south-1.amazonaws.com/atlas/celery-health-sidecar:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: health
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            cpu: 50m
+            memory: 64Mi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 20
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 15
+          timeoutSeconds: 15
+          failureThreshold: 3
   - fullnameOverride: lentra-los-celery-crosschecks
     serviceAccount:
       create: true
