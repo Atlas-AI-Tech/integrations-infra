@@ -74,7 +74,7 @@ deployments:
           APP_MODE: "web"
         resources:
           requests:
-            memory: 512Mi
+            memory: 612Mi
             cpu: 100m
           limits:
             memory: 1024Mi
@@ -135,20 +135,6 @@ deployments:
           limits:
             cpu: 50m
             memory: 64Mi
-        healthcheck:
-          enabled: true
-          livenessProbe:
-            path: "/health"
-            initialDelaySeconds: 60
-            periodSeconds: 30
-            timeoutSeconds: 20
-            failureThreshold: 3
-          readinessProbe:
-            path: "/ready"
-            initialDelaySeconds: 30
-            periodSeconds: 15
-            timeoutSeconds: 15
-            failureThreshold: 3
   - fullnameOverride: lentra-los-celery-crosschecks
     serviceAccount:
       create: true
