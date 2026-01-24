@@ -63,6 +63,9 @@ spec:
   {{- toYaml . | nindent 8}}
   {{- end }}
     spec:
+      {{- if .shareProcessNamespace }}
+      shareProcessNamespace: {{ .shareProcessNamespace }}
+      {{- end }}
       {{- if .serviceAccount }}
       {{- if .serviceAccount.create }}
       serviceAccountName: {{ .serviceAccount.name | default (print (include "helper.fullname" (merge . $)))}}
