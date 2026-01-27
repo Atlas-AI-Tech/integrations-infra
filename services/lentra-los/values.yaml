@@ -91,6 +91,7 @@ deployments:
             periodSeconds: 20
   
   - fullnameOverride: lentra-loss-worker-callback-worker
+    shareProcessNamespace: true
     serviceAccount:
       create: true
       annotations:
