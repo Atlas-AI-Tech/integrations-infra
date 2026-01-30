@@ -160,6 +160,7 @@ deployments:
             cpu: 50m
             memory: 64Mi
   - fullnameOverride: lentra-los-celery-crosschecks
+    shareProcessNamespace: true
     serviceAccount:
       create: true
       annotations:
@@ -190,7 +191,45 @@ deployments:
         resources:
           requests:
             memory: 128Mi
+      - fullnameOverride: health-sidecar
+        image:
+          repository: 183295448290.dkr.ecr.ap-south-1.amazonaws.com/atlas/celery-health-sidecar
+          tag: latest
+        imagePullPolicy: Always
+        port: 8080
+        portName: health
+        healthcheck:
+          enabled: true
+          startupProbe:
+            path: "/health"
+            port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 10
+            failureThreshold: 30
+          livenessProbe:
+            path: "/health"
+            port: 8080
+            initialDelaySeconds: 90
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            path: "/ready"
+            port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 2
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            cpu: 50m
+            memory: 64Mi
   - fullnameOverride: lentra-los-worker-llmservice
+    shareProcessNamespace: true
     serviceAccount:
       create: true
       annotations:
@@ -223,6 +262,43 @@ deployments:
             memory: 128Mi
           limits:
             memory: 1024Mi
+      - fullnameOverride: health-sidecar
+        image:
+          repository: 183295448290.dkr.ecr.ap-south-1.amazonaws.com/atlas/celery-health-sidecar
+          tag: latest
+        imagePullPolicy: Always
+        port: 8080
+        portName: health
+        healthcheck:
+          enabled: true
+          startupProbe:
+            path: "/health"
+            port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 10
+            failureThreshold: 30
+          livenessProbe:
+            path: "/health"
+            port: 8080
+            initialDelaySeconds: 90
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            path: "/ready"
+            port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 2
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            cpu: 50m
+            memory: 64Mi
   # - fullnameOverride: lentra-loss-worker-postllm
   #   serviceAccount:
   #     create: true
