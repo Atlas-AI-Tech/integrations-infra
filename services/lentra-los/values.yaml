@@ -129,6 +129,29 @@ deployments:
         imagePullPolicy: Always
         port: 8080
         portName: health
+        healthcheck:
+          enabled: true
+          startupProbe:
+            path: "/health"
+            port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 10
+            failureThreshold: 30
+          livenessProbe:
+            path: "/health"
+            port: 8080
+            initialDelaySeconds: 90
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            path: "/ready"
+            port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 2
         resources:
           requests:
             cpu: 10m

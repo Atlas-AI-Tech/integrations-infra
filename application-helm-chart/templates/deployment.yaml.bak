@@ -335,32 +335,18 @@ spec:
           protocol: TCP
         {{- if .healthcheck }}
         {{- if .healthcheck.enabled }}
-        {{- if .healthcheck.startupProbe }}
-        startupProbe:
-          httpGet:
-            path: {{ default "/health" .healthcheck.startupProbe.path }}
-            port: {{ default "http" .healthcheck.startupProbe.port }}
-          initialDelaySeconds: {{ default 10 .healthcheck.startupProbe.initialDelaySeconds }}
-          periodSeconds: {{ default 10 .healthcheck.startupProbe.periodSeconds }}
-          timeoutSeconds: {{ default 5 .healthcheck.startupProbe.timeoutSeconds }}
-          failureThreshold: {{ default 30 .healthcheck.startupProbe.failureThreshold }}
-        {{- end }}
         livenessProbe:
           httpGet:
             path: {{ default (default "/health" (((($.Values.default).defaultHealthcheck).livenessProbe).path)) ((((.healthcheck).livenessProbe).path)) }}
-            port: {{ default "http" .healthcheck.livenessProbe.port }}
+            port: http
           initialDelaySeconds: {{ default (default 30 (((($.Values.default).defaultHealthcheck).livenessProbe).initialDelaySeconds)) ((((.healthcheck).livenessProbe).initialDelaySeconds)) }}
           periodSeconds: {{ default (default 30 (((($.Values.default).defaultHealthcheck).livenessProbe).periodSeconds)) ((((.healthcheck).livenessProbe).periodSeconds)) }}
-          timeoutSeconds: {{ default (default 5 (((($.Values.default).defaultHealthcheck).livenessProbe).timeoutSeconds)) ((((.healthcheck).livenessProbe).timeoutSeconds)) }}
-          failureThreshold: {{ default (default 3 (((($.Values.default).defaultHealthcheck).livenessProbe).failureThreshold)) ((((.healthcheck).livenessProbe).failureThreshold)) }}
         readinessProbe:
           httpGet:
             path: {{ default (default "/health" (((($.Values.default).defaultHealthcheck).readinessProbe).path)) ((((.healthcheck).readinessProbe).path)) }}
-            port: {{ default "http" .healthcheck.readinessProbe.port }}
+            port: http
           initialDelaySeconds: {{ default (default 30 (((($.Values.default).defaultHealthcheck).readinessProbe).initialDelaySeconds)) ((((.healthcheck).readinessProbe).initialDelaySeconds)) }}
           periodSeconds: {{ default (default 30 (((($.Values.default).defaultHealthcheck).readinessProbe).periodSeconds)) ((((.healthcheck).readinessProbe).periodSeconds)) }}
-          timeoutSeconds: {{ default (default 5 (((($.Values.default).defaultHealthcheck).readinessProbe).timeoutSeconds)) ((((.healthcheck).readinessProbe).timeoutSeconds)) }}
-          failureThreshold: {{ default (default 3 (((($.Values.default).defaultHealthcheck).readinessProbe).failureThreshold)) ((((.healthcheck).readinessProbe).failureThreshold)) }}
         {{- end }}
         {{- end }}
         resources:
