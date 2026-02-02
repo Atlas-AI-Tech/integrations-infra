@@ -330,7 +330,7 @@ spec:
             {{- end }} 
         {{- end }}
         ports:
-        - name: http
+        - name: {{ default "http" .portName }}
           containerPort: {{ default 80 .port }}
           protocol: TCP
         {{- if .healthcheck }}
@@ -339,7 +339,7 @@ spec:
         startupProbe:
           httpGet:
             path: {{ default "/health" .healthcheck.startupProbe.path }}
-            port: {{ default "http" .healthcheck.startupProbe.port }}
+            port: {{ default (default "http" .portName) .healthcheck.startupProbe.port }}
           initialDelaySeconds: {{ default 10 .healthcheck.startupProbe.initialDelaySeconds }}
           periodSeconds: {{ default 10 .healthcheck.startupProbe.periodSeconds }}
           timeoutSeconds: {{ default 5 .healthcheck.startupProbe.timeoutSeconds }}
@@ -348,7 +348,7 @@ spec:
         livenessProbe:
           httpGet:
             path: {{ default (default "/health" (((($.Values.default).defaultHealthcheck).livenessProbe).path)) ((((.healthcheck).livenessProbe).path)) }}
-            port: {{ default "http" .healthcheck.livenessProbe.port }}
+            port: {{ default (default "http" .portName) .healthcheck.livenessProbe.port }}
           initialDelaySeconds: {{ default (default 30 (((($.Values.default).defaultHealthcheck).livenessProbe).initialDelaySeconds)) ((((.healthcheck).livenessProbe).initialDelaySeconds)) }}
           periodSeconds: {{ default (default 30 (((($.Values.default).defaultHealthcheck).livenessProbe).periodSeconds)) ((((.healthcheck).livenessProbe).periodSeconds)) }}
           timeoutSeconds: {{ default (default 5 (((($.Values.default).defaultHealthcheck).livenessProbe).timeoutSeconds)) ((((.healthcheck).livenessProbe).timeoutSeconds)) }}
@@ -356,7 +356,7 @@ spec:
         readinessProbe:
           httpGet:
             path: {{ default (default "/health" (((($.Values.default).defaultHealthcheck).readinessProbe).path)) ((((.healthcheck).readinessProbe).path)) }}
-            port: {{ default "http" .healthcheck.readinessProbe.port }}
+            port: {{ default (default "http" .portName) .healthcheck.readinessProbe.port }}
           initialDelaySeconds: {{ default (default 30 (((($.Values.default).defaultHealthcheck).readinessProbe).initialDelaySeconds)) ((((.healthcheck).readinessProbe).initialDelaySeconds)) }}
           periodSeconds: {{ default (default 30 (((($.Values.default).defaultHealthcheck).readinessProbe).periodSeconds)) ((((.healthcheck).readinessProbe).periodSeconds)) }}
           timeoutSeconds: {{ default (default 5 (((($.Values.default).defaultHealthcheck).readinessProbe).timeoutSeconds)) ((((.healthcheck).readinessProbe).timeoutSeconds)) }}
