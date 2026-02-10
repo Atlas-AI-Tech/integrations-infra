@@ -114,6 +114,7 @@ deployments:
     containers:
       - fullnameOverride: lentra-loss-worker-callback-worker
         imagePullPolicy: Always
+        portName: worker
         env:
           APP_MODE: "worker"
           CELERY_QUEUES: "uat-lentra-los-callback"
@@ -183,6 +184,7 @@ deployments:
     containers:
       - fullnameOverride: lentra-los-celery-crosschecks
         imagePullPolicy: Always
+        portName: worker
         env:
           APP_MODE: "worker"
           CELERY_QUEUES: "uat-lentra-los-crosschecks"
@@ -252,6 +254,7 @@ deployments:
     containers:
       - fullnameOverride: lentra-los-worker-llmservice
         imagePullPolicy: Always
+        portName: worker
         env:
           APP_MODE: "worker"
           CELERY_QUEUES: "uat-lentra-los-llmservice"
