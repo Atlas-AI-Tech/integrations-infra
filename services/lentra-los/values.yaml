@@ -72,6 +72,11 @@ deployments:
         imagePullPolicy: Always
         env:
           APP_MODE: "web"
+        envFrom:
+          - secretRef:
+              name: env
+          - configMapRef:
+              name: lentra-los-config
         resources:
           requests:
             memory: 812Mi
@@ -120,6 +125,11 @@ deployments:
           CELERY_QUEUES: "uat-lentra-los-callback"
           CELERY_CONCURRENCY: "5"
           CELERY_LOGLEVEL: "info"
+        envFrom:
+          - secretRef:
+              name: env
+          - configMapRef:
+              name: lentra-los-config
         resources:
           requests:
             memory: 128Mi
@@ -190,6 +200,11 @@ deployments:
           CELERY_QUEUES: "uat-lentra-los-crosschecks"
           CELERY_CONCURRENCY: "5"
           CELERY_LOGLEVEL: "info"
+        envFrom:
+          - secretRef:
+              name: env
+          - configMapRef:
+              name: lentra-los-config
         resources:
           requests:
             memory: 128Mi
@@ -260,6 +275,11 @@ deployments:
           CELERY_QUEUES: "uat-lentra-los-llmservice"
           CELERY_CONCURRENCY: "5"
           CELERY_LOGLEVEL: "info"
+        envFrom:
+          - secretRef:
+              name: env
+          - configMapRef:
+              name: lentra-los-config
         resources:
           requests:
             memory: 128Mi
@@ -334,6 +354,11 @@ jobs:
       - name: "dbmigrate-job"
         env:
           APP_MODE: "migration"
+        envFrom:
+          - secretRef:
+              name: env
+          - configMapRef:
+              name: lentra-los-config
         command: ["sh", "-c"]
         args: 
           - |
