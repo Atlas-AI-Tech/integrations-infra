@@ -184,6 +184,18 @@ spec:
         {{- end }}
         {{- end }}
         {{- end }}
+        {{- if .envFrom }}
+        {{- range .envFrom }}
+        {{- if .secretRef }}
+        - secretRef:
+            name: {{ .secretRef.name }}
+        {{- end }}
+        {{- if .configMapRef }}
+        - configMapRef:
+            name: {{ .configMapRef.name }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
         volumeMounts:
         {{- if $.Values.default.configMaps }}
         {{- if $.Values.default.configMaps.volumeMount.enabled }}
@@ -274,6 +286,18 @@ spec:
         {{- range .secrets.injection.secrets }}
         - secretRef:
             name: {{ . }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- if .envFrom }}
+        {{- range .envFrom }}
+        {{- if .secretRef }}
+        - secretRef:
+            name: {{ .secretRef.name }}
+        {{- end }}
+        {{- if .configMapRef }}
+        - configMapRef:
+            name: {{ .configMapRef.name }}
         {{- end }}
         {{- end }}
         {{- end }}
