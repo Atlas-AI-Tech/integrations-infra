@@ -74,7 +74,7 @@ spec:
           {{- end }}
           volumes:
           {{- if or $.Values.default.configMaps }}
-          {{- if $.Values.default.configMaps.volumeMount.enabled }}
+          {{- if $.Values.default.configMaps.volumeMount }}{{- if $.Values.default.configMaps.volumeMount.enabled }}
             - name: {{ print (include "helper.name" $) "-configMap" }}
               configMap:
                 name: {{ print (include "helper.name" $) "-volumeMount" }}
@@ -82,6 +82,7 @@ spec:
                 {{- range  $.Values.default.configMaps.volumeMount.data }}
                   - key: {{ .fileName }}
                     path: {{ .fileName -}} 
+          {{- end }}
                 {{ end -}}
           {{- end }}
           {{- end }}
@@ -180,7 +181,7 @@ spec:
             {{- end }}
             volumeMounts:
             {{- if $.Values.default.configMaps }}
-            {{- if $.Values.default.configMaps.volumeMount.enabled }}
+            {{- if $.Values.default.configMaps.volumeMount }}{{- if $.Values.default.configMaps.volumeMount.enabled }}
             {{- range  $.Values.default.configMaps.volumeMount.data }}
             - name: {{ print (include "helper.name" $) "-" (.name) }}
               mountPath: {{ default "/tmp/test" (default $.Values.default.configMaps.volumeMount.commonMountPath .mountPath) }}
@@ -188,6 +189,7 @@ spec:
             {{- end }}
             {{- end }}
             {{- if not $cronjob.excludeSecretsFromDefault }}
+            {{- end }}
             {{- if $.Values.default.externalSecrets.volumeMount }}
             {{- range $secret := $.Values.default.externalSecrets.volumeMount.secrets }}
             {{- range $secret.data }}
@@ -275,7 +277,7 @@ spec:
             {{- end }}
             volumeMounts:
             {{- if $.Values.default.configMaps }}
-            {{- if $.Values.default.configMaps.volumeMount.enabled }}
+            {{- if $.Values.default.configMaps.volumeMount }}{{- if $.Values.default.configMaps.volumeMount.enabled }}
             {{- range  $.Values.default.configMaps.volumeMount.data }}
             - name: {{ print (include "helper.name" $) "-" (.name) }}
               mountPath: {{ default "/tmp/test" (default $.Values.default.configMaps.volumeMount.commonMountPath .mountPath) }}
@@ -283,6 +285,7 @@ spec:
             {{- end }}
             {{- end }}
             {{- if not $cronjob.excludeSecretsFromDefault }}
+            {{- end }}
             {{- if $.Values.default.externalSecrets }}
             {{- if $.Values.default.externalSecrets.volumeMount }}
             {{- range $secret := $.Values.default.externalSecrets.volumeMount.secrets }}
