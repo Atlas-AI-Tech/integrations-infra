@@ -17,6 +17,8 @@ default:
   configMaps:
     injection:
       enabled: true
+    volumeMount:
+      enabled: false
   externalSecrets:
     injection:
       secrets:
