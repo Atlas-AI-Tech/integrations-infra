@@ -150,7 +150,7 @@ spec:
             image: {{ default $commonimage $image  }}
             envFrom:
             {{- if $.Values.default.configMaps }}
-            {{- if $.Values.default.configMaps.injection.enabled }} 
+            {{- if $.Values.default.configMaps.injection }}{{- if $.Values.default.configMaps.injection.enabled }} 
             - configMapRef:
                 name: {{ print (include "helper.name" $) "-injection" }}
             {{- end }}
@@ -244,7 +244,7 @@ spec:
             imagePullPolicy: {{default "Always" .imagePullPolicy }}
             envFrom:
             {{- if $.Values.default.configMaps }}
-            {{- if $.Values.default.configMaps.injection.enabled }} 
+            {{- if $.Values.default.configMaps.injection }}{{- if $.Values.default.configMaps.injection.enabled }} 
             - configMapRef:
                 name: {{ print (include "helper.name" $) "-injection" }} 
             {{- end }}
