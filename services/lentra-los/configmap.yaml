@@ -6,7 +6,6 @@ metadata:
     app: lentra-los
 data:
   FLASK_ENV: "development"
-  LOS_DATABASE_URL: "mysql+pymysql://admininfra:Atlas9876%23infra@kmatlas.cpica6giy2g3.ap-south-1.rds.amazonaws.com/uat_lentra_devops"
   LOS_LENTRA_INSTITUTION_NAME: "PFL"
   LOS_LENTRA_TENENT_ID: "4437"
   LOS_LENTRA_APPLICATION: "dummy"
