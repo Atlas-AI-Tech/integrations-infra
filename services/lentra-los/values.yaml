@@ -14,28 +14,6 @@ default:
       memory: 256Mi
     limits:
       memory: 1024Mi
-  configMaps:
-    injection:
-      enabled: true
-      path: |-
-        FLASK_ENV=development
-        LOS_DATABASE_URL=mysql+pymysql://admininfra:Atlas9876%23infra@kmatlas.cpica6giy2g3.ap-south-1.rds.amazonaws.com/uat_lentra_devops
-        LOS_LENTRA_INSTITUTION_NAME=PFL
-        LOS_LENTRA_TENENT_ID=4437
-        LOS_LENTRA_APPLICATION=dummy
-        LOS_LENTRA_INSTITUTION_ID=9630
-        LOS_BUCKET_NAME=uat-lentra-los
-        LOS_AWS_REGION=ap-south-1
-        LOS_LLM_QUEUE=uat-lentra-los-llmservice
-        LOS_POSTLLM_QUEUE=uat-lentra-los-postllm
-        LOS_CROSSCHECKS_QUEUE=uat-lentra-los-crosschecks
-        LOS_CALLBACK_QUEUE=uat-lentra-los-callback
-        REDIS_HOST=atlas-eks-vpc-qixik9.serverless.aps1.cache.amazonaws.com
-        REDIS_PORT=6379
-        SAGE_API_BASE_URL=http://3.6.238.4
-        ADDRESS_API=http://address-service:8000/v1/address/match
-    volumeMount:
-      enabled: false
   externalSecrets:
     injection:
       secrets:
