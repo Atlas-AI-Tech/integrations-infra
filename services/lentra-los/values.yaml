@@ -25,6 +25,7 @@ default:
 
 deployments:
   - fullnameOverride: lentra-los
+    excludeSecretsFromDefault: true
     serviceAccount:
       create: true
       annotations:
@@ -96,6 +97,7 @@ deployments:
             periodSeconds: 20
   
   - fullnameOverride: lentra-loss-worker-callback-worker
+    excludeSecretsFromDefault: true
     shareProcessNamespace: true
     serviceAccount:
       create: true
@@ -171,6 +173,7 @@ deployments:
             cpu: 50m
             memory: 64Mi
   - fullnameOverride: lentra-los-celery-crosschecks
+    excludeSecretsFromDefault: true
     shareProcessNamespace: true
     serviceAccount:
       create: true
@@ -246,6 +249,7 @@ deployments:
             cpu: 50m
             memory: 64Mi
   - fullnameOverride: lentra-los-worker-llmservice
+    excludeSecretsFromDefault: true
     shareProcessNamespace: true
     serviceAccount:
       create: true
@@ -341,6 +345,7 @@ deployments:
 
 jobs:
   - name: dbmigrate-job
+    excludeSecretsFromDefault: true
     serviceAccount:
       create: true
       annotations:
