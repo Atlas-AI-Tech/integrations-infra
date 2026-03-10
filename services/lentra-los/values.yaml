@@ -14,6 +14,9 @@ default:
       memory: 256Mi
     limits:
       memory: 1024Mi
+  configMaps:
+    injection:
+      enabled: true
   externalSecrets:
     injection:
       secrets:
@@ -25,7 +28,6 @@ default:
 
 deployments:
   - fullnameOverride: lentra-los
-    excludeSecretsFromDefault: true
     serviceAccount:
       create: true
       annotations:
@@ -73,11 +75,6 @@ deployments:
         imagePullPolicy: Always
         env:
           APP_MODE: "web"
-        envFrom:
-          - secretRef:
-              name: lentra-los-atlas-lentra-los-env
-          - configMapRef:
-              name: lentra-los-config
         resources:
           requests:
             memory: 812Mi
@@ -97,7 +94,6 @@ deployments:
             periodSeconds: 20
   
   - fullnameOverride: lentra-loss-worker-callback-worker
-    excludeSecretsFromDefault: true
     shareProcessNamespace: true
     serviceAccount:
       create: true
@@ -127,11 +123,6 @@ deployments:
           CELERY_QUEUES: "uat-lentra-los-callback"
           CELERY_CONCURRENCY: "5"
           CELERY_LOGLEVEL: "info"
-        envFrom:
-          - secretRef:
-              name: lentra-los-atlas-lentra-los-env
-          - configMapRef:
-              name: lentra-los-config
         resources:
           requests:
             memory: 128Mi
@@ -173,7 +164,6 @@ deployments:
             cpu: 50m
             memory: 64Mi
   - fullnameOverride: lentra-los-celery-crosschecks
-    excludeSecretsFromDefault: true
     shareProcessNamespace: true
     serviceAccount:
       create: true
@@ -203,11 +193,6 @@ deployments:
           CELERY_QUEUES: "uat-lentra-los-crosschecks"
           CELERY_CONCURRENCY: "5"
           CELERY_LOGLEVEL: "info"
-        envFrom:
-          - secretRef:
-              name: lentra-los-atlas-lentra-los-env
-          - configMapRef:
-              name: lentra-los-config
         resources:
           requests:
             memory: 128Mi
@@ -249,7 +234,6 @@ deployments:
             cpu: 50m
             memory: 64Mi
   - fullnameOverride: lentra-los-worker-llmservice
-    excludeSecretsFromDefault: true
     shareProcessNamespace: true
     serviceAccount:
       create: true
@@ -279,11 +263,6 @@ deployments:
           CELERY_QUEUES: "uat-lentra-los-llmservice"
           CELERY_CONCURRENCY: "5"
           CELERY_LOGLEVEL: "info"
-        envFrom:
-          - secretRef:
-              name: lentra-los-atlas-lentra-los-env
-          - configMapRef:
-              name: lentra-los-config
         resources:
           requests:
             memory: 128Mi
@@ -345,7 +324,6 @@ deployments:
 
 jobs:
   - name: dbmigrate-job
-    excludeSecretsFromDefault: true
     serviceAccount:
       create: true
       annotations:
@@ -359,11 +337,6 @@ jobs:
       - name: "dbmigrate-job"
         env:
           APP_MODE: "migration"
-        envFrom:
-          - secretRef:
-              name: lentra-los-atlas-lentra-los-env
-          - configMapRef:
-              name: lentra-los-config
         command: ["sh", "-c"]
         args: 
           - |
