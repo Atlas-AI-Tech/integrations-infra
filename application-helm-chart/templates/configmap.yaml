@@ -1,5 +1,4 @@
 {{- if .Values.default.configMaps }}
-{{- if .Values.default.configMaps.injection }}
 {{- if .Values.default.configMaps.injection.enabled  }}
 ---
 apiVersion: v1
@@ -34,10 +33,8 @@ data:
   {{- end -}}
 {{- end }}
 {{- end }}
-{{- end }}
 
 {{- if .Values.default.configMaps }}
-{{- if .Values.default.configMaps.volumeMount }}
 {{- if .Values.default.configMaps.volumeMount.enabled }}
 ---
 apiVersion: v1
@@ -66,14 +63,11 @@ metadata:
   {{- end }}
   {{- end }}
 data:
-  {{- if .Values.default.configMaps.volumeMount }}
-  {{- if .Values.default.configMaps.volumeMount.enabled }}
+  {{- if  .Values.default.configMaps.volumeMount.enabled }}
   {{- range  $.Values.default.configMaps.volumeMount.data }}
   {{- (print (.fileName)) | nindent 4 -}}: |-
   {{- .content | nindent 6 -}}
   {{- end -}}
   {{- end -}}
-  {{- end -}}
-{{- end }}
 {{- end }}
 {{- end }}

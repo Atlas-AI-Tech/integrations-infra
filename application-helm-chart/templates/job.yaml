@@ -48,7 +48,6 @@ spec:
       {{- end }}
       volumes:
       {{- if or $.Values.default.configMaps }}
-      {{- if $.Values.default.configMaps.volumeMount }}
       {{- if $.Values.default.configMaps.volumeMount.enabled }}
         - name: {{ print (include "helper.name" $) "-configMap" }}
           configMap:
@@ -58,7 +57,6 @@ spec:
               - key: {{ .fileName }}
                 path: {{ .fileName -}} 
             {{ end -}}
-      {{- end }}
       {{- end }}
       {{- end }}
       {{- if not $job.excludeSecretsFromDefault  }}
@@ -154,18 +152,6 @@ spec:
         {{- end }}
         {{- end }}
         {{- end }}
-        {{- if .envFrom }}
-        {{- range .envFrom }}
-        {{- if .secretRef }}
-        - secretRef:
-            name: {{ .secretRef.name }}
-        {{- end }}
-        {{- if .configMapRef }}
-        - configMapRef:
-            name: {{ .configMapRef.name }}
-        {{- end }}
-        {{- end }}
-        {{- end }}
         volumeMounts:
         {{- if $.Values.default.configMaps }}
         {{- if $.Values.default.configMaps.volumeMount.enabled }}
@@ -257,18 +243,6 @@ spec:
         {{- range .secrets.injection }}
         - secretRef:
             name: {{ . }}
-        {{- end }}
-        {{- end }}
-        {{- end }}
-        {{- if .envFrom }}
-        {{- range .envFrom }}
-        {{- if .secretRef }}
-        - secretRef:
-            name: {{ .secretRef.name }}
-        {{- end }}
-        {{- if .configMapRef }}
-        - configMapRef:
-            name: {{ .configMapRef.name }}
         {{- end }}
         {{- end }}
         {{- end }}
