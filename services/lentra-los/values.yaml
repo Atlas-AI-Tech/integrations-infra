@@ -74,7 +74,7 @@ deployments:
           APP_MODE: "web"
         envFrom:
           - secretRef:
-              name: env
+              name: lentra-los-atlas-lentra-los-env
           - configMapRef:
               name: lentra-los-config
         resources:
@@ -127,7 +127,7 @@ deployments:
           CELERY_LOGLEVEL: "info"
         envFrom:
           - secretRef:
-              name: env
+              name: lentra-los-atlas-lentra-los-env
           - configMapRef:
               name: lentra-los-config
         resources:
@@ -202,7 +202,7 @@ deployments:
           CELERY_LOGLEVEL: "info"
         envFrom:
           - secretRef:
-              name: env
+              name: lentra-los-atlas-lentra-los-env
           - configMapRef:
               name: lentra-los-config
         resources:
@@ -277,7 +277,7 @@ deployments:
           CELERY_LOGLEVEL: "info"
         envFrom:
           - secretRef:
-              name: env
+              name: lentra-los-atlas-lentra-los-env
           - configMapRef:
               name: lentra-los-config
         resources:
@@ -356,7 +356,7 @@ jobs:
           APP_MODE: "migration"
         envFrom:
           - secretRef:
-              name: env
+              name: lentra-los-atlas-lentra-los-env
           - configMapRef:
               name: lentra-los-config
         command: ["sh", "-c"]
