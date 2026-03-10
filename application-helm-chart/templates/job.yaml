@@ -49,7 +49,7 @@ spec:
       volumes:
       {{- if $.Values.default.configMaps }}
       {{- if $.Values.default.configMaps.volumeMount }}
-      {{- if $.Values.default.configMaps.volumeMount }}{{- if $.Values.default.configMaps.volumeMount.enabled }}
+      {{- if $.Values.default.configMaps.volumeMount.enabled }}
         - name: {{ print (include "helper.name" $) "-configMap" }}
           configMap:
             name: {{ print (include "helper.name" $) "-volumeMount" }}
