@@ -14,6 +14,9 @@ default:
       memory: 256Mi
     limits:
       memory: 1024Mi
+  configMaps:
+    injection:
+      enabled: true
   externalSecrets:
     injection:
       secrets:
