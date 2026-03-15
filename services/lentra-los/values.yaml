@@ -72,6 +72,7 @@ deployments:
         imagePullPolicy: Always
         env:
           APP_MODE: "web"
+          ENABLE_CLEANUP: "true"
         resources:
           requests:
             memory: 812Mi
