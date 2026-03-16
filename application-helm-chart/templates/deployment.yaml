@@ -329,10 +329,12 @@ spec:
           - {{  . | quote}}
             {{- end }} 
         {{- end }}
+        {{- if .port }}
         ports:
         - name: {{ default "http" .portName }}
           containerPort: {{ default 80 .port }}
           protocol: TCP
+        {{- end }}
         {{- if .healthcheck }}
         {{- if .healthcheck.enabled }}
         {{- if .healthcheck.startupProbe }}
