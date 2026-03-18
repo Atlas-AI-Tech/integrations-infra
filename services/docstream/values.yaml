@@ -1,0 +1,249 @@
+projectName: docstream
+default:
+  annotations:
+    all:
+      app: docstream
+  labels:
+    all:
+      "app.kubernetes.io/part-of": docstream
+  image:
+    repository: "183295448290.dkr.ecr.ap-south-1.amazonaws.com/atlas/protium"
+    tag: 0.0.0
+  resources:
+    requests:
+      memory: 256Mi
+    limits:
+      memory: 1024Mi
+  externalSecrets:
+    injection:
+      secrets:
+        - secretName: env
+          dataFrom:
+            secretKey: app/docstream
+          refreshInterval: 30s
+          secretStoreName: aws-secret-manager
+
+deployments:
+  - fullnameOverride: docstream
+    serviceAccount:
+      create: true
+      annotations:
+        eks.amazonaws.com/role-arn: "arn:aws:iam::183295448290:role/atlas-api-server-role"
+    hpa:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 4
+      targetCPUUtilizationPercentage: 70
+      targetMemoryUtilizationPercentage: 80
+    service:
+      type: NodePort
+      ports:
+        - port: 8000
+          name: api
+          ingress:
+            enabled: true
+            annotations:
+              kubernetes.io/ingress.class: alb
+              alb.ingress.kubernetes.io/group.name: atlas
+              alb.ingress.kubernetes.io/target-type: instance
+              alb.ingress.kubernetes.io/scheme: internet-facing
+              alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80},{"HTTPS": 443}]'
+              alb.ingress.kubernetes.io/ssl-redirect: '443'
+              alb.ingress.kubernetes.io/healthcheck-path: /v1/docstream/health
+              alb.ingress.kubernetes.io/healthcheck-timeout-seconds: '15'
+              alb.ingress.kubernetes.io/healthcheck-interval-seconds: '300'
+              alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=300
+              alb.ingress.kubernetes.io/target-group-attributes: deregistration_delay.timeout_seconds=300
+              alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-south-1:183295448290:certificate/9935b050-cc72-465d-9afa-9975803f6a3f
+            rules:
+              - host: docstream.dev.kreditmind.com
+                http:
+                  paths:
+                    - path: /*
+                      pathType: ImplementationSpecific
+                      backend:
+                        service:
+                          name: docstream
+                          port:
+                            number: 8000
+    containers:
+      - fullnameOverride: docstream
+        port: 8000
+        imagePullPolicy: Always
+        resources:
+          requests:
+            memory: 512Mi
+            cpu: 100m
+          limits:
+            memory: 1024Mi
+            cpu: 200m
+        healthcheck:
+          enabled: true
+          livenessProbe:
+            path: "/v1/docstream/health"
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          readinessProbe:
+            path: "/v1/docstream/health"
+            initialDelaySeconds: 10
+            periodSeconds: 20
+
+  - fullnameOverride: docstream-worker-upload
+    shareProcessNamespace: true
+    serviceAccount:
+      create: true
+      annotations:
+        eks.amazonaws.com/role-arn: "arn:aws:iam::183295448290:role/atlas-api-server-role"
+    keda:
+      min: 1
+      max: 4
+      pollingInterval: 30
+      cooldownPeriod: 300
+      triggers:
+        - type: aws-sqs-queue
+          metadata:
+            queueURL: https://sqs.ap-south-1.amazonaws.com/183295448290/uat-stream-upload
+            queueLength: "30"
+            awsRegion: ap-south-1
+            identityOwner: operator
+    containers:
+      - fullnameOverride: docstream-worker-upload
+        imagePullPolicy: Always
+        portName: worker
+        command: ["celery"]
+        args: ["-A", "celery_app", "worker", "-Q", "uat-stream-upload", "--concurrency=10", "--loglevel=info"]
+        resources:
+          requests:
+            memory: 128Mi
+          limits:
+            memory: 1024Mi
+      - fullnameOverride: health-sidecar
+        image:
+          repository: 183295448290.dkr.ecr.ap-south-1.amazonaws.com/atlas/celery-health-sidecar
+          tag: latest
+        imagePullPolicy: Always
+        port: 8080
+        portName: health
+        healthcheck:
+          enabled: true
+          startupProbe:
+            path: "/health"
+            port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 10
+            failureThreshold: 30
+          livenessProbe:
+            path: "/health"
+            port: 8080
+            initialDelaySeconds: 90
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            path: "/ready"
+            port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 2
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            cpu: 50m
+            memory: 64Mi
+
+  - fullnameOverride: docstream-worker-llmservice
+    shareProcessNamespace: true
+    serviceAccount:
+      create: true
+      annotations:
+        eks.amazonaws.com/role-arn: "arn:aws:iam::183295448290:role/atlas-api-server-role"
+    keda:
+      min: 1
+      max: 4
+      pollingInterval: 30
+      cooldownPeriod: 300
+      triggers:
+        - type: aws-sqs-queue
+          metadata:
+            queueURL: https://sqs.ap-south-1.amazonaws.com/183295448290/uat-stream-llmservice
+            queueLength: "30"
+            awsRegion: ap-south-1
+            identityOwner: operator
+    containers:
+      - fullnameOverride: docstream-worker-llmservice
+        imagePullPolicy: Always
+        portName: worker
+        command: ["celery"]
+        args: ["-A", "celery_app", "worker", "-Q", "uat-stream-llmservice", "--concurrency=10", "--loglevel=info"]
+        resources:
+          requests:
+            memory: 128Mi
+          limits:
+            memory: 1024Mi
+      - fullnameOverride: health-sidecar
+        image:
+          repository: 183295448290.dkr.ecr.ap-south-1.amazonaws.com/atlas/celery-health-sidecar
+          tag: latest
+        imagePullPolicy: Always
+        port: 8080
+        portName: health
+        healthcheck:
+          enabled: true
+          startupProbe:
+            path: "/health"
+            port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 10
+            failureThreshold: 30
+          livenessProbe:
+            path: "/health"
+            port: 8080
+            initialDelaySeconds: 90
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            path: "/ready"
+            port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 2
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            cpu: 50m
+            memory: 64Mi
+
+jobs:
+  - name: dbmigrate-job
+    serviceAccount:
+      create: true
+      annotations:
+        eks.amazonaws.com/role-arn: "arn:aws:iam::183295448290:role/atlas-api-server-role"
+    annotations:
+      "helm.sh/hook": pre-upgrade,pre-install
+      "helm.sh/hook-weight": "-5"
+      "helm.sh/hook-delete-policy": before-hook-creation
+    ttlSecondsAfterFinished: 600
+    containers:
+      - name: "dbmigrate-job"
+        command: ["sh", "-c"]
+        args:
+          - |
+            echo "Starting DB migration at $(date)"
+            flask db current
+            flask db upgrade
+            echo "Migration completed at $(date) with exit code: $?"
+        resources:
+          requests:
+            memory: 512Mi
+          limits:
+            memory: 512Mi
