@@ -71,7 +71,7 @@ deployments:
         port: 8000
         imagePullPolicy: Always
         env:
-          DEPLOY_TIME: "2026-03-19T13-13"
+          DEPLOY_TIME: "2026-03-19T14-42"
         resources:
           requests:
             memory: 600Mi
