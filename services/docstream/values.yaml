@@ -70,6 +70,8 @@ deployments:
       - fullnameOverride: docstream
         port: 8000
         imagePullPolicy: Always
+        env:
+          DEPLOY_TIME: "2026-03-19T13-13"
         resources:
           requests:
             memory: 512Mi
