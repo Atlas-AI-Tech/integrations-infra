@@ -353,7 +353,7 @@ spec:
             port: {{ default (default "http" .portName) .healthcheck.livenessProbe.port }}
           initialDelaySeconds: {{ default (default 30 (((($.Values.default).defaultHealthcheck).livenessProbe).initialDelaySeconds)) ((((.healthcheck).livenessProbe).initialDelaySeconds)) }}
           periodSeconds: {{ default (default 30 (((($.Values.default).defaultHealthcheck).livenessProbe).periodSeconds)) ((((.healthcheck).livenessProbe).periodSeconds)) }}
-          timeoutSeconds: {{ default (default 5 (((($.Values.default).defaultHealthcheck).livenessProbe).timeoutSeconds)) .healthcheck.livenessProbe.timeoutSeconds }}
+          timeoutSeconds: {{ if .healthcheck.livenessProbe.timeoutSeconds }}{{ .healthcheck.livenessProbe.timeoutSeconds }}{{ else }}{{ default 5 (((($.Values.default).defaultHealthcheck).livenessProbe).timeoutSeconds) }}{{ end }}
           failureThreshold: {{ default (default 3 (((($.Values.default).defaultHealthcheck).livenessProbe).failureThreshold)) ((((.healthcheck).livenessProbe).failureThreshold)) }}
         readinessProbe:
           httpGet:
@@ -361,7 +361,7 @@ spec:
             port: {{ default (default "http" .portName) .healthcheck.readinessProbe.port }}
           initialDelaySeconds: {{ default (default 30 (((($.Values.default).defaultHealthcheck).readinessProbe).initialDelaySeconds)) ((((.healthcheck).readinessProbe).initialDelaySeconds)) }}
           periodSeconds: {{ default (default 30 (((($.Values.default).defaultHealthcheck).readinessProbe).periodSeconds)) ((((.healthcheck).readinessProbe).periodSeconds)) }}
-          timeoutSeconds: {{ default (default 5 (((($.Values.default).defaultHealthcheck).readinessProbe).timeoutSeconds)) .healthcheck.readinessProbe.timeoutSeconds }}
+          timeoutSeconds: {{ if .healthcheck.readinessProbe.timeoutSeconds }}{{ .healthcheck.readinessProbe.timeoutSeconds }}{{ else }}{{ default 5 (((($.Values.default).defaultHealthcheck).readinessProbe).timeoutSeconds) }}{{ end }}
           failureThreshold: {{ default (default 3 (((($.Values.default).defaultHealthcheck).readinessProbe).failureThreshold)) ((((.healthcheck).readinessProbe).failureThreshold)) }}
         {{- end }}
         {{- end }}
