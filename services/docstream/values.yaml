@@ -81,12 +81,16 @@ deployments:
           enabled: true
           livenessProbe:
             path: "/v1/docstream/health"
-            initialDelaySeconds: 10
+            initialDelaySeconds: 15
             periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
           readinessProbe:
             path: "/v1/docstream/health"
-            initialDelaySeconds: 10
+            initialDelaySeconds: 15
             periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
 
   - fullnameOverride: docstream-worker-upload
     serviceAccount:
