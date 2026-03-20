@@ -303,6 +303,76 @@ deployments:
           limits:
             cpu: 50m
             memory: 64Mi
+  - fullnameOverride: lentra-los-celery-counter
+    shareProcessNamespace: true
+    serviceAccount:
+      create: true
+      annotations:
+        eks.amazonaws.com/role-arn: "arn:aws:iam::183295448290:role/atlas-api-server-role"
+    keda:
+      enabled: true
+      min: 1
+      max: 6
+      pollingInterval: 30
+      cooldownPeriod: 300
+      triggers:
+        - type: aws-sqs-queue
+          metadata:
+            queueURL: https://sqs.ap-south-1.amazonaws.com/183295448290/uat-lentra-los-counter
+            queueLength: "30"
+            awsRegion: ap-south-1
+            identityOwner: operator
+          authenticationRef:
+            name: aws-sqs-auth
+    containers:
+      - fullnameOverride: lentra-los-celery-counter
+        imagePullPolicy: Always
+        portName: worker
+        env:
+          APP_MODE: "worker"
+          CELERY_QUEUES: "uat-lentra-los-counter"
+          CELERY_CONCURRENCY: "5"
+          CELERY_LOGLEVEL: "info"
+        resources:
+          requests:
+            memory: 128Mi
+      - fullnameOverride: health-sidecar
+        image:
+          repository: 183295448290.dkr.ecr.ap-south-1.amazonaws.com/atlas/celery-health-sidecar
+          tag: latest
+        imagePullPolicy: Always
+        port: 8080
+        portName: health
+        healthcheck:
+          enabled: true
+          startupProbe:
+            path: "/health"
+            port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 10
+            failureThreshold: 30
+          livenessProbe:
+            path: "/health"
+            port: 8080
+            initialDelaySeconds: 90
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            path: "/ready"
+            port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 2
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            cpu: 50m
+            memory: 64Mi
   # - fullnameOverride: lentra-loss-worker-postllm
   #   serviceAccount:
   #     create: true
