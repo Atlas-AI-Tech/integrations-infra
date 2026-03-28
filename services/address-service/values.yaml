@@ -14,6 +14,14 @@ default:
       memory: 6Gi
     limits:
       memory: 12Gi
+  externalSecrets:
+    injection:
+      secrets:
+        - secretName: env
+          dataFrom:
+            secretKey: app/address-service
+          refreshInterval: 30s
+          secretStoreName: aws-secret-manager
 
 deployments:
   - fullnameOverride: address-service
