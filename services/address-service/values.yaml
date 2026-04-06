@@ -86,4 +86,36 @@ deployments:
       value: "address-service"
       effect: "NoSchedule"
     nodeSelector:
-      dedicated: "address-service"          
+      dedicated: "address-service"
+
+jobs:
+  - name: dbmigrate-job
+    serviceAccount:
+      create: true
+      annotations:
+        eks.amazonaws.com/role-arn: "arn:aws:iam::183295448290:role/atlas-api-server-role"
+    annotations:
+      "helm.sh/hook": pre-upgrade,pre-install
+      "helm.sh/hook-weight": "-5"
+      "helm.sh/hook-delete-policy": before-hook-creation
+    ttlSecondsAfterFinished: 600
+    containers:
+      - name: "dbmigrate-job"
+        env:
+          APP_MODE: "migration"
+        command: ["sh", "-c"]
+        args:
+          - |
+            echo "Starting DB migration at $(date)"
+            echo "Current migration status:"
+            flask db current
+            echo "Running migration upgrade:"
+            flask db upgrade
+            echo "New migration status:"
+            flask db current
+            echo "Migration completed at $(date) with exit code: $?"
+        resources:
+          requests:
+            memory: 512Mi
+          limits:
+            memory: 512Mi
