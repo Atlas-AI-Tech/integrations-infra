@@ -104,6 +104,9 @@ jobs:
       - name: "dbmigrate-job"
         env:
           APP_MODE: "migration"
+        secrets:
+          injection:
+            - address-service-atlas-address-service-env
         command: ["sh", "-c"]
         args:
           - |
