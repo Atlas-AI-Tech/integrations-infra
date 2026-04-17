@@ -99,6 +99,7 @@ jobs:
       "helm.sh/hook-weight": "-5"
       "helm.sh/hook-delete-policy": before-hook-creation
     ttlSecondsAfterFinished: 600
+    # trigger redeploy
     containers:
       - name: "dbmigrate-job"
         env:
