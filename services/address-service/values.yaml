@@ -116,6 +116,6 @@ jobs:
             echo "Migration completed at $(date) with exit code: $?"
         resources:
           requests:
-            memory: 512Mi
-          limits:
             memory: 1Gi
+          limits:
+            memory: 2Gi
