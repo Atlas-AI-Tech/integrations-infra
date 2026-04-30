@@ -583,7 +583,14 @@ spec:
     metricType: {{ .metricType }}
     {{- end }}
     metadata:
+      {{- if and (eq .type "aws-sqs-queue") .sqsQueueName $.Values.global }}
+      queueURL: {{ printf "https://sqs.%s.amazonaws.com/%s/%s-%s" $.Values.global.sqsRegion $.Values.global.accountId $.Values.global.environment .sqsQueueName }}
+      queueLength: {{ default "30" .metadata.queueLength | quote }}
+      awsRegion: {{ $.Values.global.sqsRegion }}
+      identityOwner: {{ default "operator" .metadata.identityOwner }}
+      {{- else }}
       {{- toYaml .metadata | nindent 6 }}
+      {{- end }}
   {{- end }}
 {{- end }}
 {{- end}}
