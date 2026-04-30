@@ -122,7 +122,7 @@ deployments:
         portName: worker
         env:
           APP_MODE: "worker"
-          CELERY_QUEUES: "uat-lentra-los-callback"
+          CELERY_ROLE: "callback"
           CELERY_CONCURRENCY: "5"
           CELERY_LOGLEVEL: "info"
         resources:
@@ -191,7 +191,7 @@ deployments:
         portName: worker
         env:
           APP_MODE: "worker"
-          CELERY_QUEUES: "uat-lentra-los-crosschecks"
+          CELERY_ROLE: "crosschecks"
           CELERY_CONCURRENCY: "5"
           CELERY_LOGLEVEL: "info"
         resources:
@@ -260,7 +260,7 @@ deployments:
         portName: worker
         env:
           APP_MODE: "worker"
-          CELERY_QUEUES: "uat-lentra-los-llmservice"
+          CELERY_ROLE: "llmservice"
           CELERY_CONCURRENCY: "5"
           CELERY_LOGLEVEL: "info"
         resources:
@@ -331,7 +331,7 @@ deployments:
         portName: worker
         env:
           APP_MODE: "worker"
-          CELERY_QUEUES: "uat-lentra-los-counter"
+          CELERY_ROLE: "counter"
           CELERY_CONCURRENCY: "5"
           CELERY_LOGLEVEL: "info"
         resources:
@@ -400,7 +400,7 @@ deployments:
         portName: worker
         env:
           APP_MODE: "worker"
-          CELERY_QUEUES: "uat-lentra-los-upload"
+          CELERY_ROLE: "upload"
           CELERY_CONCURRENCY: "5"
           CELERY_LOGLEVEL: "info"
         resources:
