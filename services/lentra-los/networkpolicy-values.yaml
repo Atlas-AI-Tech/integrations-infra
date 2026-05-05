@@ -1,0 +1,118 @@
+networkPolicies:
+  # ============================================================
+  # atlas-dev namespace policies
+  # ============================================================
+
+  # 01 - Default deny all ingress
+  - name: default-deny-ingress
+    namespace: atlas-dev
+    ingress: []
+
+  # 02 - Allow ALB ingress to API pods (VPC CIDR)
+  - name: allow-alb-ingress-to-api-pods
+    namespace: atlas-dev
+    podSelector:
+      matchExpressions:
+        - key: app.kubernetes.io/name
+          operator: In
+          values:
+            - address-service
+            - bulk-service-api
+            - docstream
+            - integrations
+            - lentra-los
+    ingress:
+      - from:
+          - ipBlock:
+              cidr: 10.0.0.0/16
+
+  # 02 - Allow ALB ingress to sage-app
+  - name: allow-alb-ingress-to-sage
+    namespace: atlas-dev
+    podSelector:
+      matchLabels:
+        app: sage-app
+    ingress:
+      - from:
+          - ipBlock:
+              cidr: 10.0.0.0/16
+
+  # 03 - Allow all intra-namespace communication
+  - name: allow-intra-namespace
+    namespace: atlas-dev
+    ingress:
+      - from:
+          - podSelector: {}
+
+  # 04 - Allow Prometheus monitoring
+  - name: allow-monitoring-ingress
+    namespace: atlas-dev
+    ingress:
+      - from:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: monitoring
+
+  # 05 - Allow locust load testing
+  - name: allow-locust-ingress
+    namespace: atlas-dev
+    podSelector:
+      matchExpressions:
+        - key: app.kubernetes.io/name
+          operator: In
+          values:
+            - address-service
+            - bulk-service-api
+            - docstream
+            - integrations
+            - lentra-los
+    ingress:
+      - from:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: default
+            podSelector:
+              matchLabels:
+                app: locust-master
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: default
+            podSelector:
+              matchLabels:
+                app: locust-worker
+
+  # ============================================================
+  # default namespace policies
+  # ============================================================
+
+  # 01 - Default deny all ingress in default namespace
+  - name: default-deny-ingress
+    namespace: default
+    ingress: []
+
+  # 02 - Allow ALB + worker traffic to locust-master
+  - name: allow-locust-master-ingress
+    namespace: default
+    podSelector:
+      matchLabels:
+        app: locust-master
+    ingress:
+      - from:
+          - ipBlock:
+              cidr: 10.0.0.0/16
+      - from:
+          - podSelector:
+              matchLabels:
+                app: locust-worker
+
+  # 03 - Allow locust-master to reach locust-worker
+  - name: allow-locust-worker-ingress
+    namespace: default
+    podSelector:
+      matchLabels:
+        app: locust-worker
+    ingress:
+      - from:
+          - podSelector:
+              matchLabels:
+                app: locust-master
