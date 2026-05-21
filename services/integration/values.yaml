@@ -73,7 +73,7 @@ deployments:
           APP_MODE: "web"
         resources:
           requests:
-            cpu: 30m
+            cpu: 60m
             memory: 512Mi
           limits:
             memory: 1024Mi
