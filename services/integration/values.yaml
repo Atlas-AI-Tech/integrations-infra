@@ -34,8 +34,8 @@ deployments:
       enabled: true
       minReplicas: 1
       maxReplicas: 3
-      targetCPUUtilizationPercentage: 70
-      targetMemoryUtilizationPercentage: 80
+      targetCPUUtilizationPercentage: 80
+      targetMemoryUtilizationPercentage: 85
     service:
       type: NodePort
       ports:
@@ -73,7 +73,7 @@ deployments:
           APP_MODE: "web"
         resources:
           requests:
-            cpu: 20m
+            cpu: 30m
             memory: 512Mi
           limits:
             memory: 1024Mi
