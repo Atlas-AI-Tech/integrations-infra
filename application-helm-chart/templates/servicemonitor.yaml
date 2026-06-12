@@ -1,0 +1,40 @@
+{{- range $deployments := $.Values.deployments }}
+{{- $deployment := . }}
+{{- if .serviceMonitor }}
+{{- if .serviceMonitor.enabled }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "helper.fullname" (merge . $) }}
+  namespace: {{ default $.Release.Namespace .serviceMonitor.namespace }}
+  labels:
+    {{- (include "helper.labels" $) | nindent 4 }}
+    {{- with .serviceMonitor.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  selector:
+    matchLabels:
+      {{- print (include "helper.selectorLabels" (merge . $)) | nindent 6 }}
+  namespaceSelector:
+    matchNames:
+      - {{ $.Release.Namespace }}
+  endpoints:
+    {{- if .serviceMonitor.endpoints }}
+    {{- toYaml .serviceMonitor.endpoints | nindent 4 }}
+    {{- else }}
+    - port: {{ default "metrics" .serviceMonitor.port }}
+      {{- with .serviceMonitor.interval }}
+      interval: {{ . }}
+      {{- end }}
+      {{- with .serviceMonitor.path }}
+      path: {{ . }}
+      {{- end }}
+      {{- with .serviceMonitor.scrapeTimeout }}
+      scrapeTimeout: {{ . }}
+      {{- end }}
+    {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
