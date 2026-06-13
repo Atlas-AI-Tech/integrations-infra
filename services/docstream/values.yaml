@@ -25,6 +25,13 @@ default:
 
 deployments:
   - fullnameOverride: docstream
+    serviceMonitor:
+      enabled: true
+      port: api
+      path: /metrics
+      interval: 30s
+      labels:
+        release: kube-prometheus-stack
     serviceAccount:
       create: true
       annotations:
@@ -108,7 +115,7 @@ deployments:
         - type: aws-sqs-queue
           metadata:
             queueURL: https://sqs.ap-south-1.amazonaws.com/183295448290/uat-stream-upload
-            queueLength: "30"
+            queueLength: "10"
             awsRegion: ap-south-1
             identityOwner: operator
     containers:
@@ -136,7 +143,7 @@ deployments:
         - type: aws-sqs-queue
           metadata:
             queueURL: https://sqs.ap-south-1.amazonaws.com/183295448290/uat-stream-llmservice
-            queueLength: "30"
+            queueLength: "10"
             awsRegion: ap-south-1
             identityOwner: operator
     containers:
@@ -145,6 +152,62 @@ deployments:
         portName: worker
         command: ["celery"]
         args: ["-A", "celery_app", "worker", "-Q", "uat-stream-llmservice", "--concurrency=5", "--loglevel=info"]
+        resources:
+          requests:
+            memory: 512Mi
+          limits:
+            memory: 1.5Gi
+  - fullnameOverride: docstream-worker-counter
+    serviceAccount:
+      create: true
+      annotations:
+        eks.amazonaws.com/role-arn: "arn:aws:iam::183295448290:role/atlas-api-server-role"
+    keda:
+      min: 1
+      max: 4
+      pollingInterval: 30
+      cooldownPeriod: 300
+      triggers:
+        - type: aws-sqs-queue
+          metadata:
+            queueURL: https://sqs.ap-south-1.amazonaws.com/183295448290/uat-stream-counter
+            queueLength: "10"
+            awsRegion: ap-south-1
+            identityOwner: operator
+    containers:
+      - fullnameOverride: docstream-worker-counter
+        imagePullPolicy: Always
+        portName: worker
+        command: ["celery"]
+        args: ["-A", "celery_app", "worker", "-Q", "uat-stream-counter", "--concurrency=5", "--loglevel=info"]
+        resources:
+          requests:
+            memory: 512Mi
+          limits:
+            memory: 1.5Gi
+  - fullnameOverride: docstream-worker-callback
+    serviceAccount:
+      create: true
+      annotations:
+        eks.amazonaws.com/role-arn: "arn:aws:iam::183295448290:role/atlas-api-server-role"
+    keda:
+      min: 1
+      max: 4
+      pollingInterval: 30
+      cooldownPeriod: 300
+      triggers:
+        - type: aws-sqs-queue
+          metadata:
+            queueURL: https://sqs.ap-south-1.amazonaws.com/183295448290/uat-stream-callback
+            queueLength: "10"
+            awsRegion: ap-south-1
+            identityOwner: operator
+    containers:
+      - fullnameOverride: docstream-worker-callback
+        imagePullPolicy: Always
+        portName: worker
+        command: ["celery"]
+        args: ["-A", "celery_app", "worker", "-Q", "uat-stream-callback", "--concurrency=5", "--loglevel=info"]
         resources:
           requests:
             memory: 512Mi
