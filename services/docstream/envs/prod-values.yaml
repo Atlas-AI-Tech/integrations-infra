@@ -1,0 +1,231 @@
+projectName: docstream
+default:
+  annotations:
+    all:
+      app: docstream
+  labels:
+    all:
+      "app.kubernetes.io/part-of": docstream
+  image:
+    repository: "183295448290.dkr.ecr.ap-south-1.amazonaws.com/atlas/protium"
+    tag: 6d119924e090f86f60255b7bd7b5094178b7284d
+  resources:
+    requests:
+      memory: 256Mi
+    limits:
+      memory: 1024Mi
+  externalSecrets:
+    injection:
+      secrets:
+        - secretName: env
+          dataFrom:
+            secretKey: app/prod/docstream
+          refreshInterval: 30s
+          secretStoreName: aws-secret-manager
+
+deployments:
+  - fullnameOverride: docstream
+    serviceAccount:
+      create: true
+    hpa:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 4
+      targetCPUUtilizationPercentage: 80
+      targetMemoryUtilizationPercentage: 80
+    service:
+      type: NodePort
+      ports:
+        - port: 8000
+          name: api
+          ingress:
+            enabled: true
+            annotations:
+              kubernetes.io/ingress.class: alb
+              alb.ingress.kubernetes.io/group.name: atlas-prod
+              alb.ingress.kubernetes.io/target-type: instance
+              alb.ingress.kubernetes.io/scheme: internet-facing
+              alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80},{"HTTPS": 443}]'
+              alb.ingress.kubernetes.io/ssl-redirect: '443'
+              alb.ingress.kubernetes.io/healthcheck-path: /v1/docstream/health
+              alb.ingress.kubernetes.io/healthcheck-timeout-seconds: '15'
+              alb.ingress.kubernetes.io/healthcheck-interval-seconds: '300'
+              alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=300
+              alb.ingress.kubernetes.io/target-group-attributes: deregistration_delay.timeout_seconds=300
+              alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-south-1:183295448290:certificate/abe8ad1a-f953-4b46-8533-1f139e62f39d
+            rules:
+              - host: docstream.prod.kreditmind.com
+                http:
+                  paths:
+                    - path: /*
+                      pathType: ImplementationSpecific
+                      backend:
+                        service:
+                          name: docstream
+                          port:
+                            number: 8000
+    containers:
+      - fullnameOverride: docstream
+        port: 8000
+        imagePullPolicy: Always
+        resources:
+          requests:
+            memory: 600Mi
+            cpu: 250m
+          limits:
+            memory: 1024Mi
+            cpu: 500m
+        healthcheck:
+          enabled: true
+          livenessProbe:
+            path: "/v1/docstream/health"
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            path: "/v1/docstream/health"
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+  - fullnameOverride: docstream-worker-upload
+    serviceAccount:
+      create: true
+    keda:
+      min: 1
+      max: 4
+      idle: 1
+      pollingInterval: 30
+      cooldownPeriod: 300
+      triggers:
+        - type: rabbitmq
+          authenticationRef:
+            name: rabbitmq-auth
+          metadata:
+            queueName: prod-stream-upload
+            mode: QueueLength
+            value: "10"
+    containers:
+      - fullnameOverride: docstream-worker-upload
+        imagePullPolicy: Always
+        portName: worker
+        command: ["celery"]
+        args: ["-A", "celery_app", "worker", "-Q", "prod-stream-upload", "--concurrency=5", "--loglevel=info"]
+        resources:
+          requests:
+            memory: 512Mi
+          limits:
+            memory: 1.5Gi
+
+  - fullnameOverride: docstream-worker-llmservice
+    serviceAccount:
+      create: true
+    keda:
+      min: 1
+      max: 4
+      idle: 1
+      pollingInterval: 30
+      cooldownPeriod: 300
+      triggers:
+        - type: rabbitmq
+          authenticationRef:
+            name: rabbitmq-auth
+          metadata:
+            queueName: prod-stream-llmservice
+            mode: QueueLength
+            value: "10"
+    containers:
+      - fullnameOverride: docstream-worker-llmservice
+        imagePullPolicy: Always
+        portName: worker
+        command: ["celery"]
+        args: ["-A", "celery_app", "worker", "-Q", "prod-stream-llmservice", "--concurrency=5", "--loglevel=info"]
+        resources:
+          requests:
+            memory: 512Mi
+          limits:
+            memory: 1.5Gi
+
+  - fullnameOverride: docstream-worker-counter
+    serviceAccount:
+      create: true
+    keda:
+      min: 1
+      max: 4
+      idle: 1
+      pollingInterval: 30
+      cooldownPeriod: 300
+      triggers:
+        - type: rabbitmq
+          authenticationRef:
+            name: rabbitmq-auth
+          metadata:
+            queueName: prod-stream-counter
+            mode: QueueLength
+            value: "10"
+    containers:
+      - fullnameOverride: docstream-worker-counter
+        imagePullPolicy: Always
+        portName: worker
+        command: ["celery"]
+        args: ["-A", "celery_app", "worker", "-Q", "prod-stream-counter", "--concurrency=5", "--loglevel=info"]
+        resources:
+          requests:
+            memory: 512Mi
+          limits:
+            memory: 1.5Gi
+
+  - fullnameOverride: docstream-worker-callback
+    serviceAccount:
+      create: true
+    keda:
+      min: 1
+      max: 4
+      idle: 1
+      pollingInterval: 30
+      cooldownPeriod: 300
+      triggers:
+        - type: rabbitmq
+          authenticationRef:
+            name: rabbitmq-auth
+          metadata:
+            queueName: prod-stream-callback
+            mode: QueueLength
+            value: "10"
+    containers:
+      - fullnameOverride: docstream-worker-callback
+        imagePullPolicy: Always
+        portName: worker
+        command: ["celery"]
+        args: ["-A", "celery_app", "worker", "-Q", "prod-stream-callback", "--concurrency=5", "--loglevel=info"]
+        resources:
+          requests:
+            memory: 512Mi
+          limits:
+            memory: 1.5Gi
+
+jobs:
+  - name: dbmigrate-job
+    serviceAccount:
+      create: true
+    annotations:
+      "helm.sh/hook": pre-upgrade,pre-install
+      "helm.sh/hook-weight": "-5"
+      "helm.sh/hook-delete-policy": before-hook-creation
+    ttlSecondsAfterFinished: 600
+    containers:
+      - name: "dbmigrate-job"
+        command: ["sh", "-c"]
+        args:
+          - |
+            echo "Starting DB migration at $(date)"
+            flask db current
+            flask db upgrade
+            echo "Migration completed at $(date) with exit code: $?"
+        resources:
+          requests:
+            memory: 512Mi
+          limits:
+            memory: 512Mi

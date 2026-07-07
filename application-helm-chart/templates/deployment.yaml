@@ -591,6 +591,10 @@ spec:
       {{- else }}
       {{- toYaml .metadata | nindent 6 }}
       {{- end }}
+    {{- if .authenticationRef }}
+    authenticationRef:
+      name: {{ .authenticationRef.name }}
+    {{- end }}
   {{- end }}
 {{- end }}
 {{- end}}
