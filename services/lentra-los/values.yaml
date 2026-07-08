@@ -116,6 +116,13 @@ deployments:
             identityOwner: operator
           authenticationRef:
             name: aws-sqs-auth
+        - type: aws-sqs-queue
+          sqsQueueName: uat-los-abcl-callback
+          metadata:
+            queueLength: "30"
+            identityOwner: operator
+          authenticationRef:
+            name: aws-sqs-auth
     containers:
       - fullnameOverride: lentra-loss-worker-callback-worker
         imagePullPolicy: Always
@@ -374,6 +381,146 @@ deployments:
           limits:
             cpu: 50m
             memory: 64Mi
+  - fullnameOverride: lentra-los-worker-llm-abcl
+    shareProcessNamespace: true
+    serviceAccount:
+      create: true
+      annotations:
+        eks.amazonaws.com/role-arn: "arn:aws:iam::183295448290:role/atlas-api-server-role"
+    keda:
+      enabled: true
+      min: 1
+      max: 6
+      pollingInterval: 30
+      cooldownPeriod: 300
+      triggers:
+        - type: aws-sqs-queue
+          sqsQueueName: uat-los-abcl-llmservice
+          metadata:
+            queueLength: "30"
+            identityOwner: operator
+          authenticationRef:
+            name: aws-sqs-auth
+    containers:
+      - fullnameOverride: lentra-los-worker-llm-abcl
+        imagePullPolicy: Always
+        portName: worker
+        env:
+          APP_MODE: "worker"
+          CELERY_ROLE: "llm_abcl"
+          CELERY_CONCURRENCY: "5"
+          CELERY_LOGLEVEL: "info"
+        resources:
+          requests:
+            memory: 128Mi
+          limits:
+            memory: 1024Mi
+      - fullnameOverride: health-sidecar
+        image:
+          repository: 183295448290.dkr.ecr.ap-south-1.amazonaws.com/atlas/celery-health-sidecar
+          tag: latest
+        imagePullPolicy: Always
+        port: 8080
+        portName: health
+        healthcheck:
+          enabled: true
+          startupProbe:
+            path: "/health"
+            port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 10
+            failureThreshold: 30
+          livenessProbe:
+            path: "/health"
+            port: 8080
+            initialDelaySeconds: 90
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            path: "/ready"
+            port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 2
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            cpu: 50m
+            memory: 64Mi
+  - fullnameOverride: lentra-los-celery-counter-abcl
+    shareProcessNamespace: true
+    serviceAccount:
+      create: true
+      annotations:
+        eks.amazonaws.com/role-arn: "arn:aws:iam::183295448290:role/atlas-api-server-role"
+    keda:
+      enabled: true
+      min: 1
+      max: 6
+      pollingInterval: 30
+      cooldownPeriod: 300
+      triggers:
+        - type: aws-sqs-queue
+          sqsQueueName: uat-los-abcl-counter
+          metadata:
+            queueLength: "30"
+            identityOwner: operator
+          authenticationRef:
+            name: aws-sqs-auth
+    containers:
+      - fullnameOverride: lentra-los-celery-counter-abcl
+        imagePullPolicy: Always
+        portName: worker
+        env:
+          APP_MODE: "worker"
+          CELERY_ROLE: "counter_abcl"
+          CELERY_CONCURRENCY: "5"
+          CELERY_LOGLEVEL: "info"
+        resources:
+          requests:
+            memory: 128Mi
+      - fullnameOverride: health-sidecar
+        image:
+          repository: 183295448290.dkr.ecr.ap-south-1.amazonaws.com/atlas/celery-health-sidecar
+          tag: latest
+        imagePullPolicy: Always
+        port: 8080
+        portName: health
+        healthcheck:
+          enabled: true
+          startupProbe:
+            path: "/health"
+            port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 10
+            failureThreshold: 30
+          livenessProbe:
+            path: "/health"
+            port: 8080
+            initialDelaySeconds: 90
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            path: "/ready"
+            port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 2
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            cpu: 50m
+            memory: 64Mi
   - fullnameOverride: lentra-los-worker-upload
     shareProcessNamespace: true
     serviceAccount:
@@ -389,6 +536,13 @@ deployments:
       triggers:
         - type: aws-sqs-queue
           sqsQueueName: lentra-los-upload
+          metadata:
+            queueLength: "30"
+            identityOwner: operator
+          authenticationRef:
+            name: aws-sqs-auth
+        - type: aws-sqs-queue
+          sqsQueueName: uat-los-abcl-upload
           metadata:
             queueLength: "30"
             identityOwner: operator
