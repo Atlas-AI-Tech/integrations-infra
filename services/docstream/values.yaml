@@ -41,7 +41,7 @@ deployments:
       minReplicas: 1
       maxReplicas: 4
       targetCPUUtilizationPercentage: 80
-      targetMemoryUtilizationPercentage: 80
+      #targetMemoryUtilizationPercentage: 80
     service:
       type: NodePort
       ports:

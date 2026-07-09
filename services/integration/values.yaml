@@ -12,9 +12,9 @@ default:
   resources:
     requests:
       cpu: 10m
-      memory: 512Mi
+      memory: 700Mi
     limits:
-      memory: 1024Mi
+      memory: 1240Mi
   externalSecrets:
     injection:
       secrets:
@@ -35,7 +35,7 @@ deployments:
       minReplicas: 1
       maxReplicas: 3
       targetCPUUtilizationPercentage: 80
-      targetMemoryUtilizationPercentage: 85
+      #targetMemoryUtilizationPercentage: 85
     service:
       type: NodePort
       ports:
