@@ -1,0 +1,98 @@
+projectName: ocr-service
+default:
+  annotations:
+    all:
+      app: ocr-service
+  labels:
+    all:
+      "app.kubernetes.io/part-of": ocr-service
+  image:
+    repository: "183295448290.dkr.ecr.ap-south-1.amazonaws.com/atlas/ocr"
+    tag: 0.0.0
+  resources:
+    requests:
+      memory: 2Gi
+    limits:
+      memory: 8Gi
+  externalSecrets:
+    injection:
+      secrets:
+        - secretName: env
+          dataFrom:
+            secretKey: app/ocr-service
+          refreshInterval: 30s
+          secretStoreName: aws-secret-manager
+
+deployments:
+  - fullnameOverride: ocr-service
+    serviceAccount:
+      create: true
+      annotations:
+        eks.amazonaws.com/role-arn: "arn:aws:iam::183295448290:role/atlas-api-server-role"
+    service:
+      type: NodePort
+      ports:
+        - port: 8000
+          name: api
+          ingress:
+            enabled: true
+            annotations:
+              kubernetes.io/ingress.class: alb
+              alb.ingress.kubernetes.io/group.name: atlas
+              alb.ingress.kubernetes.io/target-type: instance
+              alb.ingress.kubernetes.io/scheme: internet-facing
+              alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80},{"HTTPS": 443}]'
+              alb.ingress.kubernetes.io/ssl-redirect: '443'
+              alb.ingress.kubernetes.io/healthcheck-path: /v1/health
+              alb.ingress.kubernetes.io/healthcheck-timeout-seconds: '30'
+              alb.ingress.kubernetes.io/healthcheck-interval-seconds: '300'
+              alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=600
+              alb.ingress.kubernetes.io/target-group-attributes: deregistration_delay.timeout_seconds=300
+              alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-south-1:183295448290:certificate/9935b050-cc72-465d-9afa-9975803f6a3f
+            rules:
+              - host: ocr-service.dev.kreditmind.com
+                http:
+                  paths:
+                    - path: /*
+                      pathType: ImplementationSpecific
+                      backend:
+                        service:
+                          name: ocr-service
+                          port:
+                            number: 8000
+    containers:
+      - fullnameOverride: ocr-service
+        port: 8000
+        imagePullPolicy: Always
+        env:
+          APP_MODE: "web"
+          DEPLOY_TIME: "2026-07-09T11-44"
+        resources:
+          requests:
+            memory: 2Gi
+            cpu: 1000m
+            nvidia.com/gpu: "1"
+          limits:
+            memory: 8Gi
+            cpu: 4000m
+            nvidia.com/gpu: "1"
+        tolerations:
+          - key: nvidia.com/gpu
+            operator: Exists
+            effect: NoSchedule
+        nodeSelector:
+          nvidia.com/gpu.present: "true"
+        healthcheck:
+          enabled: true
+          livenessProbe:
+            path: "/v1/health"
+            initialDelaySeconds: 120
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            path: "/v1/health"
+            initialDelaySeconds: 120
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
