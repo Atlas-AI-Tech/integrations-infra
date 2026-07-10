@@ -46,7 +46,7 @@ deployments:
               alb.ingress.kubernetes.io/healthcheck-path: /v1/health
               alb.ingress.kubernetes.io/healthcheck-timeout-seconds: '30'
               alb.ingress.kubernetes.io/healthcheck-interval-seconds: '300'
-              alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=600
+              alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=300
               alb.ingress.kubernetes.io/target-group-attributes: deregistration_delay.timeout_seconds=300
               alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-south-1:183295448290:certificate/9935b050-cc72-465d-9afa-9975803f6a3f
             rules:
