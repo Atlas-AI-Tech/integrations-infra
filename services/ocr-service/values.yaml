@@ -81,7 +81,7 @@ deployments:
             operator: Exists
             effect: NoSchedule
         nodeSelector:
-          nvidia.com/gpu.present: "true"
+          node.kubernetes.io/instance-type: g4dn.xlarge
         healthcheck:
           enabled: true
           livenessProbe:
