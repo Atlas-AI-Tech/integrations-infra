@@ -76,12 +76,6 @@ deployments:
             memory: 8Gi
             cpu: 4000m
             nvidia.com/gpu: "1"
-        tolerations:
-          - key: nvidia.com/gpu
-            operator: Exists
-            effect: NoSchedule
-        nodeSelector:
-          node.kubernetes.io/instance-type: g4dn.xlarge
         healthcheck:
           enabled: true
           livenessProbe:
@@ -96,3 +90,9 @@ deployments:
             periodSeconds: 30
             timeoutSeconds: 10
             failureThreshold: 3
+    tolerations:
+      - key: nvidia.com/gpu
+        operator: Exists
+        effect: NoSchedule
+    nodeSelector:
+      node.kubernetes.io/instance-type: g4dn.xlarge
