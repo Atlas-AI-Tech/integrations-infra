@@ -13,6 +13,7 @@ data:
   LOS_CALLBACK_QUEUE: "uat-lentra-los-callback"
   LOS_COUNTER_QUEUE: "uat-lentra-los-counter"
   LOS_UPLOAD_QUEUE: "uat-lentra-los-upload"
+  LOS_CLASSIFY_QUEUE: "uat-lentra-los-classify"
   LOS_ABCL_UPLOAD_QUEUE: "uat-los-abcl-upload"
   LOS_ABCL_LLM_QUEUE: "uat-los-abcl-llmservice"
   LOS_ABCL_COUNTER_QUEUE: "uat-los-abcl-counter"
